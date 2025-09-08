@@ -1,0 +1,19 @@
+
+[server]
+port = 8081
+
+[database]
+type="postgres"
+host="172.16.100.200"
+database="project"
+port=25432
+username= "postgres"
+password= "Sky@2024"
+
+
+[jwt]
+secret = "your-super-secret-key-that-is-at-least-32-bytes-long"
+# 签发者
+issuer = "sky-website"
+# JWT 过期时间，单位：小时
+expiration_hours = 2
