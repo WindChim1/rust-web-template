@@ -1,3 +1,4 @@
+use common::AppError;
 use config::{Config, Environment, File};
 use serde::Deserialize;
 
@@ -31,12 +32,13 @@ pub struct Setting {
     pub database: Database,
 }
 impl Setting {
-    pub fn new() -> Result<Self, config::ConfigError> {
+    pub fn init() -> Result<Self, AppError> {
         let setting = Config::builder()
-            .add_source(File::with_name("/config/dev"))
+            .add_source(File::with_name("config/dev"))
             .add_source(Environment::with_prefix("APP"))
             .build()?;
-        setting.try_deserialize()
+        let setting = setting.try_deserialize()?;
+        Ok(setting)
     }
 }
 
@@ -47,7 +49,7 @@ mod config_test {
     use crate::config::Setting;
     #[test]
     fn init_config_test() -> anyhow::Result<()> {
-        let setting = Setting::new()?;
+        let setting = Setting::init()?;
         dbg!(setting);
         assert_eq!(1, 2);
         Ok(())

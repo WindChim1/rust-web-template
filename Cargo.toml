@@ -1,10 +1,5 @@
-[package]
-name = "rust-web-template"
-version = "0.1.0"
-edition = "2021"
-
-
 [workspace]
+resolver = "2"
 members = [ "app","common", "framework", "modules", "modules/system"]
 
 [workspace.dependencies]
@@ -39,8 +34,4 @@ sqlx = { version = "0.8.6", features = [
     "uuid"
 ] }
 moka = { version = "0.12.10", features = ["future"] }
-# async-trait = "0.1.89"
-anyhow = "1.0.99"
-
-[workspace.dev-dependencies]
 anyhow = "1.0.99"

@@ -1,3 +1,4 @@
+use salvo::{Depot, Request, Response, Writer, async_trait, http::StatusCode, writing::Json};
 use serde::Serialize;
 
 /// 通用响应体，模仿 RuoYi 的 AjaxResult
@@ -70,4 +71,21 @@ fn response_result_test() -> serde_json::Result<()> {
     );
 
     Ok(())
+}
+
+// 为ResponseResult实现Writer trait
+#[async_trait]
+impl<T: Serialize + Send + Sync> Writer for ResponseResult<T> {
+    async fn write(self, _req: &mut Request, _depot: &mut Depot, res: &mut Response)
+    where
+        'life0: 'async_trait,
+        'life1: 'async_trait,
+        'life2: 'async_trait,
+        Self: 'async_trait,
+    {
+        // 设置默认HTTP状态码（成功响应通常用200）
+        res.status_code(StatusCode::OK);
+        // 将ResponseResult序列化为JSON并写入响应
+        res.render(Json(self));
+    }
 }

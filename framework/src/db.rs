@@ -24,7 +24,7 @@ mod db_test {
     use crate::{config::Setting, db::create_db_pool};
     #[tokio::test]
     async fn init_config_test() -> anyhow::Result<()> {
-        let setting = Setting::new()?;
+        let setting = Setting::init()?;
         let pool = create_db_pool::<Postgres>(&setting.database.get_url()).await?;
         let isc = pool.is_closed();
         assert!(!isc);

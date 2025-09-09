@@ -39,6 +39,7 @@ pub enum AppError {
 }
 
 pub type Result<T, E = AppError> = std::result::Result<T, E>;
+
 #[async_trait]
 impl Writer for AppError {
     async fn write(self, _req: &mut Request, _depot: &mut Depot, res: &mut Response) {
@@ -88,13 +89,14 @@ impl Writer for AppError {
             AppError::JsonParseError(e) => {
                 (StatusCode::BAD_REQUEST, 400, format!("JSON格式错误: {}", e))
             }
-            AppError::Other(e) => (StatusCode::INTERNAL_SERVER_ERROR, 500, e),
+            AppError::Other(e) => (StatusCode::INTERNAL_SERVER_ERROR, 500, e.to_owned()),
         };
         let reponse_result = ResponseResult::<()>::error(business_code, &message);
         res.status_code(http_status);
         res.render(Json(reponse_result));
     }
 }
+
 #[cfg(test)]
 mod test {
     use crate::error::{AppError, Result};

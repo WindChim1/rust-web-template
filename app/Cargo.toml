@@ -7,10 +7,10 @@ edition = "2024"
 common = { path = "../common" }
 framework = { path = "../framework" }
 system = {path = "../modules/system"}
-
 # 从 workspace 继承
 tokio = { workspace = true }
 tracing = { workspace = true }
+salvo ={ workspace = true }
 serde = { workspace = true }
 serde_json = {workspace = true}
 sqlx = {workspace = true}
