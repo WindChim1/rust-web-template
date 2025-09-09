@@ -43,20 +43,4 @@ pub enum Permission {
     MenuEdit,
     #[strum(serialize = "system:menu:remove")]
     MenuRemove,
-
-    // ... 在这里添加所有其他的权限 ...
-    // 字典管理
-    #[strum(serialize = "system:dict:list")]
-    DictList,
-    // 参数配置
-    #[strum(serialize = "system:config:list")]
-    ConfigList,
-    #[strum(serialize = "system:config:query")]
-    ConfigQuery,
-    #[strum(serialize = "system:config:add")]
-    ConfigAdd,
-    #[strum(serialize = "system:config:edit")]
-    ConfigEdit,
-    #[strum(serialize = "system:config:remove")]
-    ConfigRemove,
 }

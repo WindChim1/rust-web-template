@@ -1,10 +1,10 @@
 use std::fmt::Debug;
 
-use axum::{Json, http::StatusCode, response::IntoResponse};
+use salvo::{Depot, Request, Response, Writer, async_trait, http::StatusCode, writing::Json};
 use thiserror::Error;
 use tracing::error;
 
-use crate::response::ReopnseResult;
+use crate::response::ResponseResult;
 
 #[derive(Debug, Error)]
 pub enum AppError {
@@ -39,9 +39,9 @@ pub enum AppError {
 }
 
 pub type Result<T, E = AppError> = std::result::Result<T, E>;
-
-impl IntoResponse for AppError {
-    fn into_response(self) -> axum::response::Response {
+#[async_trait]
+impl Writer for AppError {
+    async fn write(self, _req: &mut Request, _depot: &mut Depot, res: &mut Response) {
         error!("[AppError] An application error occurred: {}", self);
         // 1. 根据错误类型，映射到 (HTTP状态码, 业务码, 消息)
         let (http_status, business_code, message) = match self {
@@ -90,8 +90,9 @@ impl IntoResponse for AppError {
             }
             AppError::Other(e) => (StatusCode::INTERNAL_SERVER_ERROR, 500, e),
         };
-        let reponse_result = ReopnseResult::<()>::error(business_code, &message);
-        (http_status, Json(reponse_result)).into_response()
+        let reponse_result = ResponseResult::<()>::error(business_code, &message);
+        res.status_code(http_status);
+        res.render(Json(reponse_result));
     }
 }
 #[cfg(test)]

@@ -291,3 +291,34 @@ COMMENT ON COLUMN sys_logininfor.os IS '操作系统';
 COMMENT ON COLUMN sys_logininfor.status IS '登录状态（0成功 1失败）';
 COMMENT ON COLUMN sys_logininfor.msg IS '提示消息（如失败原因）';
 COMMENT ON COLUMN sys_logininfor.login_time IS '访问时间';
+
+
+-- 删除上传文件记录表（如果存在）
+DROP TABLE IF EXISTS sys_upload_files;
+
+-- 创建上传文件记录表
+CREATE TABLE sys_upload_files (
+    file_id           SERIAL PRIMARY KEY,
+    original_name     VARCHAR(255) NOT NULL,
+    stored_path       VARCHAR(500) NOT NULL,
+    file_url          VARCHAR(500) NOT NULL,
+    file_size         BIGINT DEFAULT 0,
+    file_status       VARCHAR(20) NOT NULL DEFAULT 'pending',
+    uploader_name     VARCHAR(64) DEFAULT '',
+    upload_time       TIMESTAMPTZ(3) DEFAULT CURRENT_TIMESTAMP(3),
+    remark            VARCHAR(500)
+);
+-- 创建唯一索引（对应原表的唯一索引）
+CREATE UNIQUE INDEX idx_file_url ON sys_upload_files (file_url) COMMENT 'URL唯一索引，便于反向查找';
+
+-- 添加表和字段注释
+COMMENT ON TABLE sys_upload_files IS '上传文件记录表';
+COMMENT ON COLUMN sys_upload_files.file_id IS '文件ID (主键)';
+COMMENT ON COLUMN sys_upload_files.original_name IS '原始文件名';
+COMMENT ON COLUMN sys_upload_files.stored_path IS '文件存储相对路径 (格式: YYYYMM/username/uuid.ext)';
+COMMENT ON COLUMN sys_upload_files.file_url IS '可供前端访问的URL (格式: /uploads/YYYYMM/username/uuid.ext)';
+COMMENT ON COLUMN sys_upload_files.file_size IS '文件大小 (字节)';
+COMMENT ON COLUMN sys_upload_files.file_status IS '文件状态 (pending, active, deprecated)';
+COMMENT ON COLUMN sys_upload_files.uploader_name IS '上传者用户名';
+COMMENT ON COLUMN sys_upload_files.upload_time IS '上传时间';
+COMMENT ON COLUMN sys_upload_files.remark IS '备注';
