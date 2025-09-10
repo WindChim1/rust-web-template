@@ -43,7 +43,7 @@ pub struct Setting {
 impl Setting {
     pub fn init() -> Result<Self, AppError> {
         let setting = Config::builder()
-            .add_source(File::with_name("../config/dev"))
+            .add_source(File::with_name("config/dev"))
             .add_source(Environment::with_prefix("APP"))
             .build()?;
         let setting = setting.try_deserialize()?;

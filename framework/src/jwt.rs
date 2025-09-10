@@ -1,10 +1,9 @@
 use std::sync::OnceLock;
 
-use common::{AppError, AppResult, response::ResponseResult};
+use common::{AppError, AppResult};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
-use salvo::{Request, Writer, handler, http::header::AUTHORIZATION, oapi::extract::QueryParam};
+use salvo::{Request, http::header::AUTHORIZATION};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::config::JWT;
 #[derive(Debug, Clone)]

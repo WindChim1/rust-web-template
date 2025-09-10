@@ -1,21 +1,11 @@
-use std::process;
-
 use common::AppResult;
 use framework::{config, db, log};
 use salvo::prelude::*;
 use sqlx::Postgres;
-use tokio::signal::ctrl_c;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
-    tokio::select! {
-        _= run()=>{
-        }
-        _= ctrl_c() =>{
-            process::exit(0);
-        }
-    }
-    Ok(())
+    run().await
 }
 
 async fn run() -> AppResult<()> {
