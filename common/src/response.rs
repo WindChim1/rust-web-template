@@ -21,6 +21,14 @@ impl<T: Serialize> ResponseResult<T> {
         }
     }
 
+    pub fn success_with_msg(msg: &str, data: T) -> Self {
+        Self {
+            code: 200,
+            msg: msg.to_string(),
+            data,
+        }
+    }
+
     /// 创建一个成功的响应，不包含业务数据
     /// `()` 在 Rust 中是一个有效的类型，并且序列化为空
     pub fn success_msg(msg: &str) -> ResponseResult<()> {

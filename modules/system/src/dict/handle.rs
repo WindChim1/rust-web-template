@@ -7,10 +7,11 @@ use salvo::oapi::extract::QueryParam;
 
 #[handler]
 pub async fn get_type_list() -> AppResult<()> {
-    Err(AppError::TokenInvalid)
+    Err(AppError::AccTokenInvalid)
 }
 
 #[handler]
-pub async fn get_data_list_by_type_id(type_id: QueryParam<i64>) -> AppResult<ResponseResult<()>> {
-    Ok(ResponseResult::success(()))
+pub async fn get_data_list_by_type_id(type_id: QueryParam<i64>) -> AppResult<ResponseResult<i64>> {
+    println!("{type_id}");
+    Ok(ResponseResult::success(type_id.into_inner()))
 }

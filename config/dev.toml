@@ -1,4 +1,3 @@
-
 [server]
 port = 8081
 
@@ -12,8 +11,11 @@ password= "Sky@2024"
 
 
 [jwt]
+#可以使用base64生成
 secret = "your-super-secret-key-that-is-at-least-32-bytes-long"
-# 签发者
-issuer = "sky-website"
-# JWT 过期时间，单位：小时
-expiration_hours = 2
+# 签发者 应用名或者域名或者ip+port
+issuer = "rust-web-template"
+# JWT  token过期时间，单位：分钟
+acc_expiration_hour = 60
+# JWT token刷新时间，单位：分钟
+ref_expiration_hour = 120

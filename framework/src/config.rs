@@ -27,14 +27,23 @@ impl Database {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct JWT {
+    pub secret: String,
+    pub issuer: String,
+    pub acc_expiration_hour: u8,
+    pub ref_expiration_hour: u8,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Setting {
     pub server: Server,
     pub database: Database,
+    pub jwt: JWT,
 }
 impl Setting {
     pub fn init() -> Result<Self, AppError> {
         let setting = Config::builder()
-            .add_source(File::with_name("config/dev"))
+            .add_source(File::with_name("../config/dev"))
             .add_source(Environment::with_prefix("APP"))
             .build()?;
         let setting = setting.try_deserialize()?;
