@@ -1,17 +1,24 @@
-use std::sync::OnceLock;
-
+use crate::config::JWT;
 use common::{AppError, AppResult};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use salvo::{Request, http::header::AUTHORIZATION};
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
 
-use crate::config::JWT;
+pub static JWTONCELOCK: OnceLock<JwtAuthUtil> = OnceLock::new();
+pub const CLAIMS: &str = "claims";
+
 #[derive(Debug, Clone)]
 pub struct JwtConfig {
+    //密钥
     secret: String,
+    //令牌时效时间
     acc_exp: u64,
+    //刷新令牌时效时间
     ref_exp: u64,
+    //加密算法
     algorithm: Algorithm,
+    //签发者
     issuer: String,
 }
 impl JwtConfig {
@@ -37,19 +44,20 @@ impl JwtConfig {
     }
 }
 
-impl From<JWT> for JwtConfig {
-    fn from(setting: JWT) -> Self {
-        let now = time::OffsetDateTime::now_utc().unix_timestamp() as u64;
+impl From<&JWT> for JwtConfig {
+    fn from(setting: &JWT) -> Self {
         Self {
-            secret: setting.secret,
-            acc_exp: now + (setting.acc_expiration_hour as u64 * 60),
-            ref_exp: now + (setting.ref_expiration_hour as u64 * 60),
+            secret: setting.secret.clone(),
+            acc_exp: setting.acc_expiration_hour as u64 * 60,
+            ref_exp: setting.ref_expiration_hour as u64 * 60,
             algorithm: Algorithm::HS256,
-            issuer: setting.issuer,
+            issuer: setting.issuer.clone(),
         }
     }
 }
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "snake_case")] // 关键注解
 pub enum TokenType {
     Access,  // 访问令牌（短期）
     Refresh, // 刷新令牌（长期）
@@ -58,8 +66,8 @@ pub enum TokenType {
 // 1. 定义JWT载荷结构
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    /// 用户名/用户ID
-    pub sub: CustomClaims,
+    /// 用户账号
+    pub sub: String,
     /// 验证过期时间（Unix时间戳，秒）
     pub exp: u64,
     /// 刷新过期时间（Unix时间戳，秒）
@@ -70,34 +78,23 @@ pub struct Claims {
     ///token 类型
     pub token_type: TokenType,
 }
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct CustomClaims {
-    pub user_id: u64,
-    pub user_name: String,
-}
-
-impl CustomClaims {
-    pub fn new(user_id: u64, user_name: String) -> Self {
-        Self { user_id, user_name }
-    }
-}
 
 impl Claims {
     /// 创建新的默认声明
-    pub fn new(sub: CustomClaims, config: &JwtConfig, token_type: TokenType) -> Self {
+    pub fn new(sub: String, config: &JwtConfig, token_type: TokenType) -> Self {
         let now = time::OffsetDateTime::now_utc().unix_timestamp() as u64;
         let iss = config.issuer.clone();
         match token_type {
             TokenType::Access => Self {
                 sub,
-                exp: config.acc_exp,
+                exp: now + config.acc_exp,
                 iat: now,
                 iss,
                 token_type,
             },
             TokenType::Refresh => Self {
                 sub,
-                exp: config.ref_exp,
+                exp: now + config.ref_exp,
                 iat: now,
                 iss,
                 token_type,
@@ -118,11 +115,7 @@ impl JwtAuthUtil {
     }
 
     /// 生成令牌
-    pub fn generate_token(
-        &self,
-        subject: CustomClaims,
-        token_type: TokenType,
-    ) -> AppResult<String> {
+    pub fn generate_token(&self, subject: String, token_type: TokenType) -> AppResult<String> {
         let claims = Claims::new(subject, &self.config, token_type);
         let token = encode(
             &Header::new(self.config.algorithm),
@@ -134,16 +127,13 @@ impl JwtAuthUtil {
 
     /// 验证令牌
     pub fn verify_acc_token(&self, token: &str) -> AppResult<Claims> {
-        match decode::<Claims>(
+        let claims = decode::<Claims>(
             token,
             &DecodingKey::from_secret(self.config.secret.as_bytes()),
             &self.config.validation(),
         )
-        .map(|data| data.claims)
-        {
-            Ok(claims) => Ok(claims),
-            Err(_) => Err(AppError::AccTokenInvalid),
-        }
+        .map(|data| data.claims)?;
+        Ok(claims)
     }
 
     /// 验证令牌
@@ -176,7 +166,33 @@ impl JwtAuthUtil {
             Ok(token.to_string())
         }
     }
+    pub fn get() -> AppResult<&'static Self> {
+        JWTONCELOCK
+            .get()
+            .ok_or(AppError::Other("JWT 工具初始化失败".to_string()))
+    }
 }
 
-pub static JWTONCELOCK: OnceLock<JwtAuthUtil> = OnceLock::new();
-pub const CLAIMS: &str = "claims";
+#[cfg(test)]
+mod test {
+    use common::AppResult;
+
+    use crate::{
+        Setting,
+        jwt::{JWTONCELOCK, JwtAuthUtil, TokenType},
+    };
+
+    #[test]
+    fn jwt_test() -> AppResult<()> {
+        // Initialize config subsystem
+        let setting = Setting::init()?;
+        // Initialize jwt auth util
+        JWTONCELOCK.get_or_init(|| JwtAuthUtil::new((&setting.jwt).into()));
+        let jwt_auth_util = JwtAuthUtil::get()?;
+        let acc_token = jwt_auth_util.generate_token("wdc".to_string(), TokenType::Access)?;
+        println!("{acc_token}");
+        let claims = jwt_auth_util.verify_acc_token(&acc_token)?;
+        println!("{claims:?}");
+        Ok(())
+    }
+}

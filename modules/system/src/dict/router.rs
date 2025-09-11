@@ -1,3 +1,4 @@
+use framework::midddleware::auth;
 use salvo::Router;
 
 use crate::dict::handle;
@@ -5,6 +6,7 @@ use crate::dict::handle;
 pub fn init_router() -> Router {
     Router::new()
         .path("dict")
+        .hoop(auth)
         .push(
             Router::new()
                 .path("type")

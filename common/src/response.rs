@@ -1,7 +1,7 @@
 use salvo::{Depot, Request, Response, Writer, async_trait, http::StatusCode, writing::Json};
 use serde::Serialize;
+use serde_json::{Value, json};
 
-/// 通用响应体，模仿 RuoYi 的 AjaxResult
 /// T 是具体的业务数据类型，必须也能被序列化
 #[derive(Debug, Serialize)]
 pub struct ResponseResult<T: Serialize> {
@@ -95,5 +95,11 @@ impl<T: Serialize + Send + Sync> Writer for ResponseResult<T> {
         res.status_code(StatusCode::OK);
         // 将ResponseResult序列化为JSON并写入响应
         res.render(Json(self));
+    }
+}
+
+impl<T: Serialize> From<ResponseResult<T>> for Value {
+    fn from(value: ResponseResult<T>) -> Self {
+        json!(value)
     }
 }

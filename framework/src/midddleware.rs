@@ -1,18 +1,16 @@
-use common::{AppError, AppResult};
+use common::AppResult;
 use salvo::{Depot, FlowCtrl, Request, Response, handler};
 
-use crate::jwt::{CLAIMS, JWTONCELOCK};
+use crate::jwt::{CLAIMS, JwtAuthUtil};
 
 #[handler]
-async fn auth(
+pub async fn auth(
     req: &mut Request,
     depot: &mut Depot,
     res: &mut Response,
     ctrl: &mut FlowCtrl,
 ) -> AppResult<()> {
-    let jwt_auth_util = JWTONCELOCK
-        .get()
-        .ok_or(AppError::Other("auth 获取失败".to_string()))?;
+    let jwt_auth_util = JwtAuthUtil::get()?;
     let token = jwt_auth_util.extract_token(req)?;
     let claims = jwt_auth_util.verify_acc_token(&token)?;
     depot.insert(CLAIMS, claims);
