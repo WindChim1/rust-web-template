@@ -1,11 +1,6 @@
 use common::AppResult;
-use framework::{
-    config, db,
-    jwt::{JWTONCELOCK, JwtAuthUtil},
-    log,
-};
+use framework::{config, db::DBPool, jwt::JWTTool, log};
 use salvo::prelude::*;
-use sqlx::Postgres;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
@@ -18,8 +13,10 @@ async fn run() -> AppResult<()> {
     // Initialize config subsystem
     let setting = config::Setting::init()?;
     // Initialize jwt auth util
-    JWTONCELOCK.get_or_init(|| JwtAuthUtil::new((&setting.jwt).into()));
-    let _db = db::create_db_pool::<Postgres>(&setting.database.get_url()).await?;
+    JWTTool::init((&setting.jwt).into());
+    // Initialize jwt auth util
+    DBPool::inint(&setting.database.get_url()).await?;
+
     let acceptor = TcpListener::new(("0.0.0.0", setting.server.port))
         .bind()
         .await;

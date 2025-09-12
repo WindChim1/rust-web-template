@@ -1,7 +1,7 @@
 use common::AppResult;
 use salvo::{Depot, FlowCtrl, Request, Response, handler};
 
-use crate::jwt::{CLAIMS, JwtAuthUtil};
+use crate::jwt::{CLAIMS, JWTTool};
 
 #[handler]
 pub async fn auth(
@@ -10,7 +10,7 @@ pub async fn auth(
     res: &mut Response,
     ctrl: &mut FlowCtrl,
 ) -> AppResult<()> {
-    let jwt_auth_util = JwtAuthUtil::get()?;
+    let jwt_auth_util = JWTTool::get()?;
     let token = jwt_auth_util.extract_token(req)?;
     let claims = jwt_auth_util.verify_acc_token(&token)?;
     depot.insert(CLAIMS, claims);

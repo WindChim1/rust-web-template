@@ -5,8 +5,21 @@ use salvo::{Request, http::header::AUTHORIZATION};
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
 
-pub static JWTONCELOCK: OnceLock<JwtAuthUtil> = OnceLock::new();
+static JWTONCELOCK: OnceLock<JwtAuthUtil> = OnceLock::new();
 pub const CLAIMS: &str = "claims";
+
+pub struct JWTTool;
+impl JWTTool {
+    pub fn init(jwt_config: JwtConfig) {
+        JWTONCELOCK.get_or_init(|| JwtAuthUtil::new(jwt_config));
+    }
+
+    pub fn get() -> AppResult<&'static JwtAuthUtil> {
+        JWTONCELOCK
+            .get()
+            .ok_or(AppError::Other("JWT 工具初始化失败".to_string()))
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct JwtConfig {
@@ -166,11 +179,6 @@ impl JwtAuthUtil {
             Ok(token.to_string())
         }
     }
-    pub fn get() -> AppResult<&'static Self> {
-        JWTONCELOCK
-            .get()
-            .ok_or(AppError::Other("JWT 工具初始化失败".to_string()))
-    }
 }
 
 #[cfg(test)]
@@ -179,7 +187,7 @@ mod test {
 
     use crate::{
         Setting,
-        jwt::{JWTONCELOCK, JwtAuthUtil, TokenType},
+        jwt::{JWTTool, TokenType},
     };
 
     #[test]
@@ -187,8 +195,8 @@ mod test {
         // Initialize config subsystem
         let setting = Setting::init()?;
         // Initialize jwt auth util
-        JWTONCELOCK.get_or_init(|| JwtAuthUtil::new((&setting.jwt).into()));
-        let jwt_auth_util = JwtAuthUtil::get()?;
+        JWTTool::init((&setting.jwt).into());
+        let jwt_auth_util = JWTTool::get()?;
         let acc_token = jwt_auth_util.generate_token("wdc".to_string(), TokenType::Access)?;
         println!("{acc_token}");
         let claims = jwt_auth_util.verify_acc_token(&acc_token)?;

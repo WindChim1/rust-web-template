@@ -5,6 +5,7 @@ port = 8081
 type="postgres"
 host="172.16.100.200"
 database="project"
+schema ="sky_website"
 port=25432
 username= "postgres"
 password= "Sky@2024"

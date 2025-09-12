@@ -1,7 +1,8 @@
 [package]
-name = "system"
+name = "monitor"
 version = "0.1.0"
 edition = "2024"
+
 
 [dependencies]
 serde= { workspace = true }
@@ -11,15 +12,8 @@ salvo = { workspace = true }
 time ={workspace =true }
 tracing={workspace = true}
 tokio = {workspace = true}
-moka ={workspace = true}
 common = { path = "../../common" }
 framework = { path = "../../framework" }
-monitor = {path = "../monitor"}
-captcha = "1.0.0"
-uuid = {workspace = true}
-dotenv= {workspace = true}
-#密码加密
-argon2 = "0.5.3"
 
 [dev-dependencies]
 anyhow={workspace = true}

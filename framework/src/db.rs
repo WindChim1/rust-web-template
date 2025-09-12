@@ -1,9 +1,33 @@
 use std::time::Duration;
 
-use sqlx::{Database, Pool, pool::PoolOptions};
+use common::{AppError, AppResult};
+use sqlx::{Database, Pool, Postgres, pool::PoolOptions};
+use tokio::sync::OnceCell;
 use tracing::info;
 
-pub async fn create_db_pool<DB: Database>(database_url: &str) -> Result<Pool<DB>, sqlx::Error> {
+static DBPOOLONCELOCK: OnceCell<Pool<Postgres>> = OnceCell::const_new();
+
+pub struct DBPool;
+impl DBPool {
+    pub async fn inint(url: &str) -> AppResult<&Pool<Postgres>> {
+        let pool = DBPOOLONCELOCK
+            .get_or_init(|| async {
+                create_db_pool::<Postgres>(url)
+                    .await
+                    .expect("数据库初始化失败")
+            })
+            .await;
+        Ok(pool)
+    }
+    pub async fn get() -> AppResult<&'static Pool<Postgres>> {
+        let pool = DBPOOLONCELOCK
+            .get()
+            .ok_or(AppError::Other("获取数据库链接失败".to_string()))?;
+        Ok(pool)
+    }
+}
+
+async fn create_db_pool<DB: Database>(database_url: &str) -> Result<Pool<DB>, sqlx::Error> {
     info!("creating dabata connection pool...");
 
     let pool = PoolOptions::new()

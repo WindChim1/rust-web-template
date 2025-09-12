@@ -1,3 +1,54 @@
+-- ----------------------------
+-- 操作日志记录
+-- ----------------------------
+DROP TABLE IF EXISTS sys_oper_log;
+
+--  创建表结构
+CREATE TABLE sys_oper_log (
+  oper_id           SERIAL        NOT NULL PRIMARY KEY,
+  title             VARCHAR(50)      DEFAULT '',
+  business_type     SMALLINT         DEFAULT 0,
+  method            VARCHAR(200)     DEFAULT '',
+  request_method    VARCHAR(10)      DEFAULT '',
+  operator_type     SMALLINT         DEFAULT 0,
+  oper_name         VARCHAR(50)      DEFAULT '',
+  oper_url          VARCHAR(255)     DEFAULT '',
+  oper_ip           VARCHAR(128)     DEFAULT '',
+  oper_location     VARCHAR(255)     DEFAULT '',
+  oper_param        VARCHAR(2000)    DEFAULT '',
+  json_result       VARCHAR(2000)    DEFAULT '',
+  status            SMALLINT         DEFAULT 0,
+  error_msg         VARCHAR(2000)    DEFAULT '',
+  oper_time         TIMESTAMPTZ,
+  cost_time         BIGINT           DEFAULT 0
+);
+
+--  独立添加表注释
+COMMENT ON TABLE sys_oper_log IS '操作日志记录';
+
+--  独立添加字段注释
+COMMENT ON COLUMN sys_oper_log.oper_id IS '日志主键';
+COMMENT ON COLUMN sys_oper_log.title IS '模块标题';
+COMMENT ON COLUMN sys_oper_log.business_type IS '业务类型（0其它 1新增 2修改 3删除）';
+COMMENT ON COLUMN sys_oper_log.method IS '方法名称';
+COMMENT ON COLUMN sys_oper_log.request_method IS '请求方式';
+COMMENT ON COLUMN sys_oper_log.operator_type IS '操作类别（0其它 1后台用户 2手机端用户）';
+COMMENT ON COLUMN sys_oper_log.oper_name IS '操作人员';
+COMMENT ON COLUMN sys_oper_log.oper_url IS '请求URL';
+COMMENT ON COLUMN sys_oper_log.oper_ip IS '主机地址';
+COMMENT ON COLUMN sys_oper_log.oper_location IS '操作地点';
+COMMENT ON COLUMN sys_oper_log.oper_param IS '请求参数';
+COMMENT ON COLUMN sys_oper_log.json_result IS '返回参数';
+COMMENT ON COLUMN sys_oper_log.status IS '操作状态（0正常 1异常）';
+COMMENT ON COLUMN sys_oper_log.error_msg IS '错误消息';
+COMMENT ON COLUMN sys_oper_log.oper_time IS '操作时间';
+COMMENT ON COLUMN sys_oper_log.cost_time IS '消耗时间';
+
+
+-- 创建索引
+CREATE INDEX idx_sys_oper_log_bt ON sys_oper_log (business_type);
+CREATE INDEX idx_sys_oper_log_s  ON sys_oper_log (status);
+CREATE INDEX idx_sys_oper_log_ot ON sys_oper_log (oper_time);
 
 -- 删除字典类型表（如果存在）
 DROP TABLE IF EXISTS sys_dict_type;
@@ -138,8 +189,13 @@ COMMENT ON COLUMN sys_role.update_by IS '更新者';
 COMMENT ON COLUMN sys_role.update_time IS '更新时间';
 COMMENT ON COLUMN sys_role.remark IS '备注';
 
+insert into sys_role values('1', '超级管理员',  'admin',  1, 1, 1, '0', 'admin', now(), '', null, '超级管理员');
+insert into sys_role values('2', '普通角色',    'common', 2, 2, 1, '0', 'admin', now(), '', null, '普通角色');
+
+
+
 -- ----------------------------
--- 用户信息表（PostgreSQL 规范版）
+-- 用户信息表
 -- ----------------------------
 --  删除表（若存在，避免冲突）
 DROP TABLE IF EXISTS sys_user CASCADE;
@@ -149,7 +205,7 @@ CREATE TABLE sys_user (
     nick_name         VARCHAR(30) NOT NULL,
     user_type         VARCHAR(2) DEFAULT '00',
     email             VARCHAR(50) DEFAULT '',
-    phonenumber       VARCHAR(11) DEFAULT '',
+    phone_number       VARCHAR(11) DEFAULT '',
     avatar            VARCHAR(100) DEFAULT '',
     password          VARCHAR(100) DEFAULT '',
     status            CHAR(1) DEFAULT '0',
@@ -170,7 +226,7 @@ COMMENT ON COLUMN sys_user.user_name IS '用户账号';
 COMMENT ON COLUMN sys_user.nick_name IS '用户昵称';
 COMMENT ON COLUMN sys_user.user_type IS '用户类型（00系统用户、01普通用户、02临时用户）';
 COMMENT ON COLUMN sys_user.email IS '用户邮箱';
-COMMENT ON COLUMN sys_user.phonenumber IS '手机号码';
+COMMENT ON COLUMN sys_user.phone_number IS '手机号码';
 COMMENT ON COLUMN sys_user.avatar IS '头像地址';
 COMMENT ON COLUMN sys_user.password IS '密码（存储加密后的值）';
 COMMENT ON COLUMN sys_user.status IS '账号状态（0正常 1停用）';
@@ -261,36 +317,37 @@ COMMENT ON COLUMN sys_oper_log.oper_time IS '操作时间';
 COMMENT ON COLUMN sys_oper_log.cost_time IS '消耗时间（毫秒）';
 
 
--- 删除系统访问记录表（如果存在）
 DROP TABLE IF EXISTS sys_logininfor;
 -- 创建系统访问记录表
-CREATE TABLE sys_logininfor (
-    info_id        SERIAL PRIMARY KEY,
-    user_name      VARCHAR(50) DEFAULT '',
-    ipaddr         VARCHAR(128) DEFAULT '',
-    login_location VARCHAR(255) DEFAULT '',
-    browser        VARCHAR(50) DEFAULT '',
-    os             VARCHAR(50) DEFAULT '',
-    status         CHAR(1) DEFAULT '0',
-    msg            VARCHAR(255) DEFAULT '',
-    login_time     TIMESTAMPTZ
+CREATE TABLE sys_login_infor (
+                                 info_id        SERIAL PRIMARY KEY,
+                                 user_name      VARCHAR(50) DEFAULT '',
+                                 ipaddr         VARCHAR(128) DEFAULT '',
+                                 login_location VARCHAR(255) DEFAULT '',
+                                 browser        VARCHAR(50) DEFAULT '',
+                                 os             VARCHAR(50) DEFAULT '',
+                                 status         CHAR(1) DEFAULT '0',
+                                 msg            VARCHAR(255) DEFAULT '',
+                                 login_time     TIMESTAMPTZ
 );
 
 -- 添加索引（对应原表的 key 定义）
-CREATE INDEX idx_sys_logininfor_s ON sys_logininfor (status);
-CREATE INDEX idx_sys_logininfor_lt ON sys_logininfor (login_time);
+CREATE INDEX idx_sys_login_infor_s ON sys_login_infor (status);
+CREATE INDEX idx_sys_login_infor_lt ON sys_login_infor (login_time);
 
 -- 添加表和字段注释
-COMMENT ON TABLE sys_logininfor IS '系统访问记录';
-COMMENT ON COLUMN sys_logininfor.info_id IS '访问ID';
-COMMENT ON COLUMN sys_logininfor.user_name IS '用户账号';
-COMMENT ON COLUMN sys_logininfor.ipaddr IS '登录IP地址';
-COMMENT ON COLUMN sys_logininfor.login_location IS '登录地点';
-COMMENT ON COLUMN sys_logininfor.browser IS '浏览器类型';
-COMMENT ON COLUMN sys_logininfor.os IS '操作系统';
-COMMENT ON COLUMN sys_logininfor.status IS '登录状态（0成功 1失败）';
-COMMENT ON COLUMN sys_logininfor.msg IS '提示消息（如失败原因）';
-COMMENT ON COLUMN sys_logininfor.login_time IS '访问时间';
+COMMENT ON TABLE sys_login_infor IS '系统访问记录';
+COMMENT ON COLUMN sys_login_infor.info_id IS '访问ID';
+COMMENT ON COLUMN sys_login_infor.user_name IS '用户账号';
+COMMENT ON COLUMN sys_login_infor.ipaddr IS '登录IP地址';
+COMMENT ON COLUMN sys_login_infor.login_location IS '登录地点';
+COMMENT ON COLUMN sys_login_infor.browser IS '浏览器类型';
+COMMENT ON COLUMN sys_login_infor.os IS '操作系统';
+COMMENT ON COLUMN sys_login_infor.status IS '登录状态（0成功 1失败）';
+COMMENT ON COLUMN sys_login_infor.msg IS '提示消息（如失败原因）';
+COMMENT ON COLUMN sys_login_infor.login_time IS '访问时间';
+
+
 
 
 -- 删除上传文件记录表（如果存在）
@@ -309,7 +366,8 @@ CREATE TABLE sys_upload_files (
     remark            VARCHAR(500)
 );
 -- 创建唯一索引（对应原表的唯一索引）
-CREATE UNIQUE INDEX idx_file_url ON sys_upload_files (file_url) COMMENT 'URL唯一索引，便于反向查找';
+CREATE UNIQUE INDEX idx_file_url ON sys_upload_files (file_url) ;
+
 
 -- 添加表和字段注释
 COMMENT ON TABLE sys_upload_files IS '上传文件记录表';

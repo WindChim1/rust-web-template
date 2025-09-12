@@ -1,6 +1,7 @@
 use salvo::{Depot, Request, Response, Writer, async_trait, http::StatusCode, writing::Json};
 use serde::Serialize;
-use serde_json::{Value, json};
+
+use crate::AppResult;
 
 /// T 是具体的业务数据类型，必须也能被序列化
 #[derive(Debug, Serialize)]
@@ -98,8 +99,8 @@ impl<T: Serialize + Send + Sync> Writer for ResponseResult<T> {
     }
 }
 
-impl<T: Serialize> From<ResponseResult<T>> for Value {
+impl<T: Serialize> From<ResponseResult<T>> for AppResult<ResponseResult<T>> {
     fn from(value: ResponseResult<T>) -> Self {
-        json!(value)
+        Ok(value)
     }
 }
