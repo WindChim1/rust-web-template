@@ -70,7 +70,6 @@ impl From<&JWT> for JwtConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "snake_case")] // 关键注解
 pub enum TokenType {
     Access,  // 访问令牌（短期）
     Refresh, // 刷新令牌（长期）
@@ -140,13 +139,16 @@ impl JwtAuthUtil {
 
     /// 验证令牌
     pub fn verify_acc_token(&self, token: &str) -> AppResult<Claims> {
-        let claims = decode::<Claims>(
+        match decode::<Claims>(
             token,
             &DecodingKey::from_secret(self.config.secret.as_bytes()),
             &self.config.validation(),
         )
-        .map(|data| data.claims)?;
-        Ok(claims)
+        .map(|data| data.claims)
+        {
+            Ok(claims) => Ok(claims),
+            Err(_) => Err(AppError::TokenInvalid),
+        }
     }
 
     /// 验证令牌
@@ -159,7 +161,7 @@ impl JwtAuthUtil {
         .map(|data| data.claims)
         {
             Ok(claims) => Ok(claims),
-            Err(_) => Err(AppError::RefTokenInvalid),
+            Err(_) => Err(AppError::TokenInvalid),
         }
     }
 
@@ -168,13 +170,13 @@ impl JwtAuthUtil {
         let token = req
             .headers()
             .get(AUTHORIZATION)
-            .ok_or(AppError::AccTokenInvalid)?
+            .ok_or(AppError::TokenInvalid)?
             .to_str()
             .map_err(|e| AppError::Other(e.to_string()))?
             .strip_prefix(BEARER_PREFIX)
-            .ok_or(AppError::AccTokenInvalid)?;
+            .ok_or(AppError::TokenInvalid)?;
         if token.is_empty() {
-            Err(AppError::AccTokenInvalid)
+            Err(AppError::TokenInvalid)
         } else {
             Ok(token.to_string())
         }

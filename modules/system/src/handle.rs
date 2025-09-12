@@ -89,7 +89,6 @@ pub async fn get_captcha_image() -> AppResult<ResponseResult<CaptchaVO>> {
 
         captcha_string = captcha.chars().iter().collect();
         // 将 UUID 和验证码答案存入缓存
-        // CapCache::insert(&uuid, &code_string).await;
         // 生成 PNG 图片
         captcha_img = match captcha.as_base64() {
             Some(i) => i,
@@ -109,16 +108,23 @@ pub async fn get_captcha_image() -> AppResult<ResponseResult<CaptchaVO>> {
     Ok(ResponseResult::success(captcha_vo))
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TokenVO {
+    access_token: String,
+    refresh_token: String,
+}
+
 /// 刷新接口令牌的
 #[handler]
-pub async fn refresh_token_handler(req: &mut Request) -> AppResult<ResponseResult<Value>> {
-    const REF_TOKEN: &str = "refresh_token";
+pub async fn refresh_token_handler(req: &mut Request) -> AppResult<ResponseResult<TokenVO>> {
+    const REFTOKEN: &str = "refreshToken";
     let jwt_auth_util = JWTTool::get()?;
     let ref_token = req
         .cookies()
-        .get(REF_TOKEN)
+        .get(REFTOKEN)
         .map(|c| c.value())
-        .ok_or_else(|| AppError::RefTokenInvalid)?;
+        .ok_or_else(|| AppError::TokenInvalid)?;
 
     // 校验 Refresh Token
     let ref_claims = jwt_auth_util.verify_ref_token(ref_token)?;
@@ -126,14 +132,12 @@ pub async fn refresh_token_handler(req: &mut Request) -> AppResult<ResponseResul
     let new_acc_token = jwt_auth_util.generate_token(ref_claims.sub.clone(), TokenType::Access)?;
     let new_ref_token = jwt_auth_util.generate_token(ref_claims.sub.clone(), TokenType::Refresh)?;
 
-    // 返回新的 Access Token 给前端（可按需返回新的 Refresh Token，实现“令牌轮换”）
-    let data = serde_json::json!({
-        "data": {
-            "access_token": new_acc_token,
-            "refresh_token": new_ref_token,
-        }
-    });
-    Ok(ResponseResult::success_with_msg("令牌刷新成功", data))
+    // 返回新的 Access Token 给前端
+    let token_vo = TokenVO {
+        access_token: new_acc_token,
+        refresh_token: new_ref_token,
+    };
+    Ok(ResponseResult::success_with_msg("令牌刷新成功", token_vo))
 }
 
 #[derive(Debug, Deserialize)]
@@ -148,7 +152,7 @@ pub struct LoginDTO {
 pub async fn login(
     login_dto: JsonBody<LoginDTO>,
     req: &mut Request,
-) -> AppResult<ResponseResult<Value>> {
+) -> AppResult<ResponseResult<TokenVO>> {
     // 获取客户端地址
     let ipaddr = req
         .remote_addr()
@@ -200,7 +204,6 @@ pub async fn login(
         }
     };
 
-    // let db_user_clone = db_user.clone();
     let password_from_db = if let Some(pwd) = user.password {
         pwd
     } else {
@@ -255,13 +258,11 @@ pub async fn login(
     let acc_token = jwt_auth_util.generate_token(username.clone(), TokenType::Access)?;
     let ref_token = jwt_auth_util.generate_token(username, TokenType::Refresh)?;
 
-    let data = serde_json::json!({
-        "data": {
-            "access_token": acc_token,
-            "refresh_token": ref_token,
-        }
-    });
-    Ok(ResponseResult::success_with_msg("登录成功", data))
+    let token_vo = TokenVO {
+        access_token: acc_token,
+        refresh_token: ref_token,
+    };
+    Ok(ResponseResult::success_with_msg("登录成功", token_vo))
 }
 
 #[handler]

@@ -1,6 +1,6 @@
 use salvo::Router;
 
-use crate::handle::{get_captcha_image, login};
+use crate::handle::{get_captcha_image, login, refresh_token_handler};
 
 pub mod dict;
 pub mod handle;
@@ -14,7 +14,8 @@ pub fn init_router() -> Router {
         .push(
             Router::new()
                 .push(Router::with_path("catpcha").get(get_captcha_image))
-                .push(Router::with_path("login").post(login)),
+                .push(Router::with_path("login").post(login))
+                .push(Router::with_path("refresh_token").post(refresh_token_handler)),
         )
         //用户相关router
         .push(user::router::init_router())

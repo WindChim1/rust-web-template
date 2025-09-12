@@ -28,10 +28,8 @@ pub enum AppError {
     RecordNotFound,
     #[error("Validation Failed")]
     ValidationFailed(String),
-    #[error("Account token is invalid or expired")]
-    AccTokenInvalid,
-    #[error("Refrensh token is invalid or expired")]
-    RefTokenInvalid,
+    #[error("token is invalid or expired")]
+    TokenInvalid,
     #[error("Permission denied")]
     PermissionDenied,
     #[error(transparent)]
@@ -81,15 +79,10 @@ impl Writer for AppError {
             AppError::ValidationFailed(msg) => (StatusCode::BAD_REQUEST, 400, msg),
 
             // 认证/授权错误
-            AppError::AccTokenInvalid => (
+            AppError::TokenInvalid => (
                 StatusCode::UNAUTHORIZED,
                 401,
                 "认证令牌无效或已过期".to_string(),
-            ),
-            AppError::RefTokenInvalid => (
-                StatusCode::UNAUTHORIZED,
-                4011,
-                "刷新令牌无效或已过期".to_string(),
             ),
             AppError::PermissionDenied => (StatusCode::FORBIDDEN, 403, "权限不足".to_string()),
 
