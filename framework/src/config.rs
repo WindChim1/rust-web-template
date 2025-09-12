@@ -1,6 +1,5 @@
 use common::AppError;
 use config::{Config, Environment, File};
-use salvo::oapi::schema;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -14,14 +13,14 @@ pub struct Database {
     tp: String,
     host: String,
     database: String,
-    sechma: Option<String>,
+    schema: Option<String>,
     port: u16,
     username: String,
     password: String,
 }
 impl Database {
     pub fn get_url(&self) -> String {
-        match &self.sechma {
+        match &self.schema {
             Some(schema) => format!(
                 "{}://{}:{}@{}:{}/{}?options=-c search_path={}",
                 self.tp, self.username, self.password, self.host, self.port, self.database, schema

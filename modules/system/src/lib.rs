@@ -14,7 +14,7 @@ pub fn init_router() -> Router {
         .push(
             Router::new()
                 .push(Router::with_path("catpcha").get(get_captcha_image))
-                .push(Router::with_path("login").get(login)),
+                .push(Router::with_path("login").post(login)),
         )
         //用户相关router
         .push(user::router::init_router())

@@ -1,14 +1,17 @@
+use std::sync::OnceLock;
+use std::time::Duration;
+
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use captcha::Captcha;
 use common::response::ResponseResult;
 use common::{AppError, AppResult};
 use framework::db::DBPool;
 use framework::jwt::{JWTTool, TokenType};
+use moka::future::Cache;
 use monitor::login_info;
-use salvo::Writer;
-use salvo::handler;
+use salvo::Request;
 use salvo::oapi::extract::{JsonBody, QueryParam};
-use salvo::{Depot, Request};
+use salvo::{Writer, handler};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::PgPool;
@@ -26,41 +29,87 @@ struct CaptchaVO {
 
 #[derive(Debug, Deserialize)]
 struct CaptchaDTO {
-    id: String,
-    value: String,
+    uuid: String,
+    code: String,
 }
 
-/// 处理获取验证码图片的请求
-#[handler]
-pub async fn get_captcha_image(depot: &mut Depot) -> AppResult<ResponseResult<CaptchaVO>> {
-    // 生成 4 位验证码
-    let mut captcha = Captcha::new();
-    captcha
-        .add_chars(4) // 验证码长度为4个字符
-        // .apply_filter(Noise::new(0.2)) // 添加噪声干扰
-        // .apply_filter(Wave::new(2.0, 10.0).horizontal()) // 添加水平扭曲
-        // .apply_filter(Wave::new(2.0, 10.0).vertical()) // 添加垂直扭曲
-        .set_color([20, 40, 80])
-        .view(200, 70); // 设置字符颜色
+pub static CACHE: OnceLock<Cache<String, String>> = OnceLock::new();
+/// 验证码缓存
+#[derive(Debug, Clone, Copy)]
+pub struct CapCache;
+impl CapCache {
+    pub fn init_cache() -> &'static Cache<String, String> {
+        CACHE.get_or_init(|| {
+            Cache::builder()
+                .max_capacity(100)
+                .time_to_live(Duration::from_secs(300))
+                .build()
+        })
+    }
+    pub fn get_cache() -> AppResult<&'static Cache<String, String>> {
+        let cache = CACHE
+            .get()
+            .ok_or(AppError::Other("验证码缓存获取失败".to_string()))?;
+        Ok(cache)
+    }
+    pub async fn insert(k: &str, v: &str) -> AppResult<()> {
+        Self::get_cache()?
+            .insert(k.to_string(), v.to_string())
+            .await;
+        Ok(())
+    }
 
-    let code_string: String = captcha.chars().iter().collect();
+    pub async fn get(k: &str) -> AppResult<Option<String>> {
+        let cache = Self::get_cache()?;
+        Ok(cache.get(k).await)
+    }
+
+    pub async fn remove(k: &str) -> AppResult<Option<String>> {
+        let cache = Self::get_cache()?;
+        Ok(cache.remove(k).await)
+    }
+}
+
+/// 处理获取验证码图片
+#[handler]
+pub async fn get_captcha_image() -> AppResult<ResponseResult<CaptchaVO>> {
+    // 生成 4 位验证码
+    let captcha_string: String;
+    let captcha_img: String;
+    //NOTE：注意：限制Captcha生命周期
+    {
+        let mut captcha = Captcha::new();
+        captcha
+            .add_chars(4) // 验证码长度为4个字符
+            // .apply_filter(Noise::new(0.2)) // 添加噪声干扰
+            // .apply_filter(Wave::new(2.0, 10.0).horizontal()) // 添加水平扭曲
+            // .apply_filter(Wave::new(2.0, 10.0).vertical()) // 添加垂直扭曲
+            .set_color([20, 40, 80])
+            .view(200, 70); // 设置字符颜色
+
+        captcha_string = captcha.chars().iter().collect();
+        // 将 UUID 和验证码答案存入缓存
+        // CapCache::insert(&uuid, &code_string).await;
+        // 生成 PNG 图片
+        captcha_img = match captcha.as_base64() {
+            Some(i) => i,
+            None => Err(AppError::Other("验证码图片生成失败".to_string()))?,
+        }; // 获取图片的 Base64 编码
+    }
+
     let uuid = Uuid::new_v4().to_string();
-    // 将 UUID 和验证码答案存入缓存
-    depot.insert(&uuid, code_string);
-    // 生成 PNG 图片
-    let code_img = match captcha.as_base64() {
-        Some(i) => i,
-        None => Err(AppError::Other("验证码图片生成失败".to_string()))?,
-    }; // 获取图片的 Base64 编码
+    CapCache::init_cache()
+        .insert(uuid.clone(), captcha_string)
+        .await;
     let captcha_vo = CaptchaVO {
         id: uuid,
-        img: code_img,
+        img: captcha_img,
     };
 
-    ResponseResult::success(captcha_vo).into()
+    Ok(ResponseResult::success(captcha_vo))
 }
 
-// 刷新接口的 Handler（仅处理刷新令牌校验和新 Access Token 生成）
+/// 刷新接口令牌的
 #[handler]
 pub async fn refresh_token_handler(req: &mut Request) -> AppResult<ResponseResult<Value>> {
     const REF_TOKEN: &str = "refresh_token";
@@ -89,7 +138,7 @@ pub async fn refresh_token_handler(req: &mut Request) -> AppResult<ResponseResul
 
 #[derive(Debug, Deserialize)]
 pub struct LoginDTO {
-    user_name: String,
+    username: String,
     password: String,
     captcha: CaptchaDTO,
 }
@@ -98,7 +147,6 @@ pub struct LoginDTO {
 #[handler]
 pub async fn login(
     login_dto: JsonBody<LoginDTO>,
-    depot: &mut Depot,
     req: &mut Request,
 ) -> AppResult<ResponseResult<Value>> {
     // 获取客户端地址
@@ -109,38 +157,46 @@ pub async fn login(
         .unwrap_or_default();
 
     let LoginDTO {
-        user_name,
+        username,
         password,
-        captcha: CaptchaDTO { id, value },
+        captcha: CaptchaDTO { uuid, code },
     } = login_dto.into_inner();
 
-    //验证码判断
-    let captcha = depot
-        .get::<String>(&id)
-        //验证码时效
-        .map_err(|_| AppError::CaptchaExpired)?;
-    //验证码错误
-    if captcha.as_str() != value {
-        Err(AppError::CaptchaError)?;
+    let db_pool = DBPool::get().await?;
+    // 1.1 验证码校验
+    match CapCache::get(&uuid).await? {
+        Some(cache_code) if cache_code.to_lowercase() == code.to_lowercase() => {
+            //移除captcha
+            CapCache::remove(&code).await?;
+        }
+        _ => {
+            record_login_log(
+                db_pool.clone(),
+                username.clone(),
+                ipaddr.clone(),
+                "1",
+                "验证码错误或已过期".to_string(),
+            )
+            .await;
+            return Err(AppError::CaptchaError);
+        }
     }
 
-    let db_pool = DBPool::get().await?;
     //账号密码校验
-    let user = service::select_user_by_user_name(&user_name).await?;
+    let user = service::select_user_by_username(&username).await?;
     let user = match user {
         Some(user) => user,
         None => {
-            error!("[LOGIN_HANDLER] 用户 '{}' 不存在.", &user_name);
+            error!("[LOGIN_HANDLER] 用户 '{}' 不存在.", &username);
             record_login_log(
                 db_pool.clone(),
-                user_name.clone(),
+                username.clone(),
                 ipaddr.clone(),
                 "1",
                 "用户密码未设置".to_string(),
             )
             .await;
-
-            return Err(AppError::RecordNotFound);
+            return Err(AppError::RecordNotFound)?;
         }
     };
 
@@ -151,18 +207,18 @@ pub async fn login(
         // 如果密码是 None，记录日志并返回错误
         error!(
             "[LOGIN_HANDLER] 数据库中用户 '{}' 的密码字段为 NULL!",
-            user_name
+            username
         );
 
         tokio::spawn(record_login_log(
             db_pool.clone(),
-            user_name.clone(),
+            username.clone(),
             ipaddr.clone(),
             "1",
             "服务端密码处理错误".to_string(),
         ));
 
-        return Err(AppError::InvalidCredentials);
+        return Err(AppError::InvalidCredentials)?;
     };
 
     let parsed_hash = PasswordHash::new(&password_from_db).map_err(|e| {
@@ -172,7 +228,7 @@ pub async fn login(
         );
         tokio::spawn(record_login_log(
             db_pool.clone(),
-            user_name.clone(),
+            username.clone(),
             ipaddr.clone(),
             "1",
             "服务端密码处理错误".to_string(),
@@ -186,7 +242,7 @@ pub async fn login(
     {
         record_login_log(
             db_pool.clone(),
-            user_name.clone(),
+            username.clone(),
             ipaddr,
             "1",
             "密码验证失败".to_string(),
@@ -196,8 +252,8 @@ pub async fn login(
     }
     // 生成jwt
     let jwt_auth_util = JWTTool::get()?;
-    let acc_token = jwt_auth_util.generate_token(user_name.clone(), TokenType::Access)?;
-    let ref_token = jwt_auth_util.generate_token(user_name, TokenType::Refresh)?;
+    let acc_token = jwt_auth_util.generate_token(username.clone(), TokenType::Access)?;
+    let ref_token = jwt_auth_util.generate_token(username, TokenType::Refresh)?;
 
     let data = serde_json::json!({
         "data": {
@@ -210,14 +266,14 @@ pub async fn login(
 
 #[handler]
 pub async fn register(
-    user_name: QueryParam<String>,
+    username: QueryParam<String>,
     password: QueryParam<String>,
 ) -> AppResult<ResponseResult<Value>> {
-    let user_name = user_name.into_inner();
-    if user_name == "wdc" && password.into_inner() == "123" {
+    let username = username.into_inner();
+    if username == "wdc" && password.into_inner() == "123" {
         let jwt_auth_util = JWTTool::get()?;
-        let acc_token = jwt_auth_util.generate_token(user_name.clone(), TokenType::Access)?;
-        let ref_token = jwt_auth_util.generate_token(user_name, TokenType::Refresh)?;
+        let acc_token = jwt_auth_util.generate_token(username.clone(), TokenType::Access)?;
+        let ref_token = jwt_auth_util.generate_token(username, TokenType::Refresh)?;
 
         let data = serde_json::json!({
             "data": {
@@ -233,14 +289,14 @@ pub async fn register(
 
 async fn record_login_log(
     db_pool: PgPool,
-    user_name: String,
+    username: String,
     ipaddr: String,
     status: &'static str,
     msg: String,
 ) {
     let log = login_info::model::SysLoginInfor {
         info_id: 0,
-        user_name: Some(user_name),
+        user_name: Some(username),
         ipaddr: Some(ipaddr),
         // 以下字段可以后续通过 User-Agent 解析库或 IP 地址库来填充
         login_location: None,

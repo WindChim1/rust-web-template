@@ -1,6 +1,6 @@
 use argon2::{
     Argon2,
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
+    password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
 };
 use common::{AppError, AppResult};
 use framework::db::DBPool;
@@ -9,7 +9,7 @@ use tracing::info;
 
 use crate::user::model::{SysUser, SysUserDTO};
 
-pub async fn select_user_by_user_name(user_name: &str) -> AppResult<Option<SysUser>> {
+pub async fn select_user_by_username(user_name: &str) -> AppResult<Option<SysUser>> {
     info!(
         "[SERVICE] Entering select_user_by_username with user_name: '{}'",
         user_name
@@ -57,10 +57,8 @@ pub async fn add_user(db: &PgPool, sys_user_dto: SysUserDTO) -> AppResult<u64, A
     info!("[TX] Inserted into sys_user, new user_id: {}", user_id);
 
     // 2. 插入用户和角色的关联信息
-    if let Some(role_ids) = sys_user_dto.role_ids {
-        if !role_ids.is_empty() {
-            insert_user_role(&mut tx, user_id as i64, &role_ids).await?;
-        }
+    if let Some(role_ids) = sys_user_dto.role_ids.as_ref().filter(|ids| !ids.is_empty()) {
+        insert_user_role(&mut tx, user_id as i64, role_ids).await?;
     }
 
     tx.commit().await?;

@@ -17,7 +17,6 @@ framework = { path = "../../framework" }
 monitor = {path = "../monitor"}
 captcha = "1.0.0"
 uuid = {workspace = true}
-dotenv= {workspace = true}
 #密码加密
 argon2 = "0.5.3"
 
