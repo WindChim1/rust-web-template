@@ -19,6 +19,8 @@ captcha = "1.0.0"
 uuid = {workspace = true}
 #密码加密
 argon2 = "0.5.3"
+serde_yaml = "0.9.34"
+user-agent-parser = "0.3.6"
 
 [dev-dependencies]
 anyhow={workspace = true}

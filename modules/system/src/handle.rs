@@ -17,6 +17,7 @@ use serde_json::Value;
 use sqlx::PgPool;
 use time::OffsetDateTime;
 use tracing::{error, info};
+use user_agent_parser::UserAgentParser;
 use uuid::Uuid;
 
 use crate::user::service;
@@ -69,6 +70,8 @@ impl CapCache {
         Ok(cache.remove(k).await)
     }
 }
+
+static PASER: OnceLock<UserAgentParser> = OnceLock::new();
 
 /// 处理获取验证码图片
 #[handler]
@@ -159,6 +162,24 @@ pub async fn login(
         .as_ipv4()
         .map(|addr| addr.ip().to_string())
         .unwrap_or_default();
+    let mut os = None;
+    let mut browser = None;
+    req.headers()
+        .get("User-Agent")
+        .and_then(|agent| agent.to_str().ok())
+        .map(|s| {
+            let user_agent_parser =
+                PASER.get_or_init(|| UserAgentParser::from_path("regexes.yaml").expect(""));
+
+            os = user_agent_parser.parse_os(s).name.map(|s| s.to_string());
+            browser = user_agent_parser
+                .parse_product(s)
+                .name
+                .map(|s| s.to_string());
+        })
+        .unwrap();
+    println!("{os:?}");
+    println!("{browser:?}");
 
     let LoginDTO {
         username,
@@ -171,13 +192,15 @@ pub async fn login(
     match CapCache::get(&uuid).await? {
         Some(cache_code) if cache_code.to_lowercase() == code.to_lowercase() => {
             //移除captcha
-            CapCache::remove(&code).await?;
+            CapCache::remove(&uuid).await?;
         }
         _ => {
             record_login_log(
                 db_pool.clone(),
                 username.clone(),
                 ipaddr.clone(),
+                os,
+                browser,
                 "1",
                 "验证码错误或已过期".to_string(),
             )
@@ -196,6 +219,8 @@ pub async fn login(
                 db_pool.clone(),
                 username.clone(),
                 ipaddr.clone(),
+                os,
+                browser,
                 "1",
                 "用户密码未设置".to_string(),
             )
@@ -217,6 +242,8 @@ pub async fn login(
             db_pool.clone(),
             username.clone(),
             ipaddr.clone(),
+            os,
+            browser,
             "1",
             "服务端密码处理错误".to_string(),
         ));
@@ -233,6 +260,8 @@ pub async fn login(
             db_pool.clone(),
             username.clone(),
             ipaddr.clone(),
+            os.clone(),
+            browser.clone(),
             "1",
             "服务端密码处理错误".to_string(),
         ));
@@ -246,7 +275,9 @@ pub async fn login(
         record_login_log(
             db_pool.clone(),
             username.clone(),
-            ipaddr,
+            ipaddr.clone(),
+            os.clone(),
+            browser.clone(),
             "1",
             "密码验证失败".to_string(),
         )
@@ -256,12 +287,23 @@ pub async fn login(
     // 生成jwt
     let jwt_auth_util = JWTTool::get()?;
     let acc_token = jwt_auth_util.generate_token(username.clone(), TokenType::Access)?;
-    let ref_token = jwt_auth_util.generate_token(username, TokenType::Refresh)?;
+    let ref_token = jwt_auth_util.generate_token(username.clone(), TokenType::Refresh)?;
 
     let token_vo = TokenVO {
         access_token: acc_token,
         refresh_token: ref_token,
     };
+
+    record_login_log(
+        db_pool.clone(),
+        username.clone(),
+        ipaddr,
+        os,
+        browser,
+        "0",
+        "登录成功".to_string(),
+    )
+    .await;
     Ok(ResponseResult::success_with_msg("登录成功", token_vo))
 }
 
@@ -292,6 +334,8 @@ async fn record_login_log(
     db_pool: PgPool,
     username: String,
     ipaddr: String,
+    os: Option<String>,
+    browser: Option<String>,
     status: &'static str,
     msg: String,
 ) {
@@ -301,8 +345,8 @@ async fn record_login_log(
         ipaddr: Some(ipaddr),
         // 以下字段可以后续通过 User-Agent 解析库或 IP 地址库来填充
         login_location: None,
-        browser: None,
-        os: None,
+        browser,
+        os,
         status: Some(status.to_string()),
         msg: Some(msg),
         // login_time: Some(Local::now().naive_local()),
@@ -328,6 +372,9 @@ mod test {
             self, PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng,
         },
     };
+    use user_agent_parser::UserAgentParser;
+
+    use crate::handle::PASER;
     #[test]
     fn argon2_test() -> password_hash::Result<()> {
         let password = b"admin"; // Bad password; don't actually use!
@@ -351,5 +398,30 @@ mod test {
                 .is_ok()
         );
         Ok(())
+    }
+    #[test]
+    fn user_agent_parser() {
+        let user_agent_parser =
+            PASER.get_or_init(|| UserAgentParser::from_path("../../regexes.yaml").expect(""));
+        let s = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0";
+        let os = user_agent_parser
+            .parse_os(s)
+            .name
+            .map(|s| s.to_string())
+            .unwrap();
+        let product_name = user_agent_parser.parse_product(s).name.unwrap();
+
+        let engine = user_agent_parser
+            .parse_engine(s)
+            .name
+            .map(|s| s.to_string())
+            .unwrap();
+        let device_name = user_agent_parser.parse_device(s).name.unwrap();
+        println!("{product_name}");
+        println!("{device_name}");
+        println!("{os}");
+        println!("{engine}");
+
+        assert_eq!(1, 2)
     }
 }
