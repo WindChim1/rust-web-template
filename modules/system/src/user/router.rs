@@ -1,9 +1,10 @@
 use salvo::Router;
 
-// use crate::user::handle;
+use crate::user::handle;
 
 pub fn init_router() -> Router {
-    Router::new().path("user")
-    // .push(Router::with_path("/login").get(handle::login))
-    // .push(Router::with_path("/refesh_token").get(handle::refresh_token_handler))
+    Router::new()
+        .path("user")
+        .push(Router::with_path("add").get(handle::add_user))
+        .push(Router::with_path("get_detail").get(handle::get_detail))
 }

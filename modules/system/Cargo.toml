@@ -21,6 +21,7 @@ uuid = {workspace = true}
 argon2 = "0.5.3"
 serde_yaml = "0.9.34"
 user-agent-parser = "0.3.6"
+async-trait = {workspace =true}
 
 [dev-dependencies]
 anyhow={workspace = true}

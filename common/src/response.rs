@@ -5,7 +5,7 @@ use crate::AppResult;
 
 /// T 是具体的业务数据类型，必须也能被序列化
 #[derive(Debug, Serialize)]
-pub struct ResponseResult<T: Serialize> {
+pub struct ResponseResult<T: Serialize = ()> {
     pub code: u16,
     pub msg: String,
     // 业务数据
@@ -29,7 +29,8 @@ impl<T: Serialize> ResponseResult<T> {
             data,
         }
     }
-
+}
+impl ResponseResult<()> {
     /// 创建一个成功的响应，不包含业务数据
     /// `()` 在 Rust 中是一个有效的类型，并且序列化为空
     pub fn success_msg(msg: &str) -> ResponseResult<()> {

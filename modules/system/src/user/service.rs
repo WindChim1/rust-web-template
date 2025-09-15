@@ -3,25 +3,23 @@ use argon2::{
     password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
 };
 use common::{AppError, AppResult};
-use framework::db::DBPool;
 use sqlx::{PgPool, Postgres, Transaction};
 use tracing::info;
 
-use crate::user::model::{SysUser, SysUserDTO};
+use crate::user::model::{SysUser, SysUserDTO, SysUserVO};
 
-pub async fn select_user_by_username(user_name: &str) -> AppResult<Option<SysUser>> {
+pub async fn select_user_by_username(db: &PgPool, user_name: &str) -> AppResult<Option<SysUser>> {
     info!(
         "[SERVICE] Entering select_user_by_username with user_name: '{}'",
         user_name
     );
-    let pool = DBPool::get().await?;
 
     let user = sqlx::query_as!(
         SysUser,
         "SELECT * FROM sys_user WHERE user_name = $1 AND del_flag = '0'",
         user_name,
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(user)
 }
@@ -30,7 +28,6 @@ pub async fn select_user_by_username(user_name: &str) -> AppResult<Option<SysUse
 pub async fn add_user(db: &PgPool, sys_user_dto: SysUserDTO) -> AppResult<u64, AppError> {
     info!("[SERVICE] Entering add_user with vo: {:?}", sys_user_dto);
     let mut tx = db.begin().await?;
-
     let password_hash = Argon2::default()
         .hash_password(
             sys_user_dto.password.as_bytes(),
@@ -58,9 +55,10 @@ pub async fn add_user(db: &PgPool, sys_user_dto: SysUserDTO) -> AppResult<u64, A
 
     // 2. 插入用户和角色的关联信息
     if let Some(role_ids) = sys_user_dto.role_ids.as_ref().filter(|ids| !ids.is_empty()) {
-        insert_user_role(&mut tx, user_id as i64, role_ids).await?;
+        insert_user_role(&mut tx, user_id, role_ids).await?;
     }
 
+    // 提交事务
     tx.commit().await?;
     info!(
         "[TX] Transaction committed successfully for user_id: {}",
@@ -69,13 +67,13 @@ pub async fn add_user(db: &PgPool, sys_user_dto: SysUserDTO) -> AppResult<u64, A
     Ok(1)
 }
 
-async fn insert_user_role(
+pub async fn insert_user_role(
     tx: &mut Transaction<'_, Postgres>,
-    user_id: i64,
-    role_ids: &[i64],
+    user_id: i32,
+    role_ids: &[i32],
 ) -> Result<(), AppError> {
     info!(
-        "[TX_HELPER] Inserting {} role associations for user_id: {}",
+        "[SERVICE] Inserting {} role associations for user_id: {}",
         role_ids.len(),
         user_id
     );
@@ -88,8 +86,23 @@ async fn insert_user_role(
             .join(", "),
     );
     sqlx::query(&sql).execute(&mut **tx).await?;
-    info!("[TX_HELPER] Successfully inserted role associations.");
+    info!("[SERVICE] Successfully inserted role associations.");
     Ok(())
+}
+pub async fn select_user_by_id(db: &PgPool, user_id: i32) -> AppResult<SysUserVO> {
+    info!(
+        "[SERVICE] Select user informaton  by fe user_id: {}",
+        user_id
+    );
+    sqlx::query_as!(
+        SysUser,
+        "select * from  sys_user where user_id = $1",
+        user_id
+    )
+    .fetch_one(db)
+    .await
+    .map(SysUserVO::from)
+    .map_err(AppError::from)
 }
 
 /// 测试用例

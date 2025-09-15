@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use time::OffsetDateTime;
 
+use crate::role::model::SysRole;
+
 /// 系统用户实体类（严格映射数据库可空性）
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -92,6 +94,7 @@ pub struct SysUserVO {
     // #[serde(with = "time::serde::rfc3339")]
     pub create_time: Option<OffsetDateTime>,
     pub remark: Option<String>,
+    pub role_list: Option<Vec<SysRole>>,
 }
 
 // 从实体类转换为响应DTO
@@ -110,6 +113,7 @@ impl From<SysUser> for SysUserVO {
             login_date: user.login_date,
             create_time: user.create_time,
             remark: user.remark,
+            role_list: None,
         }
     }
 }
@@ -129,5 +133,5 @@ pub struct SysUserDTO {
     #[serde(default = "default_status")]
     pub status: Option<String>,
     pub remark: Option<String>,
-    pub role_ids: Option<Vec<i64>>, // 关联的角色ID列表
+    pub role_ids: Option<Vec<i32>>, // 关联的角色ID列表
 }

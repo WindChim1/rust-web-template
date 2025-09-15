@@ -16,7 +16,6 @@ cargo generate 是一个用于生成项目模板的工具。它可以使用已�
 cargo install cargo-generate
 ```
 
-
 ```bash
 cargo generate WindChim1/rust-web-template
 ```
@@ -61,4 +60,12 @@ cargo nextest 是一个 Rust 增强测试工具。
 
 ```bash
 cargo install cargo-nextest --locked
+
+### 安装 sqlx-cli
+SQLx 的关联命令行实用程序，用于管理数据库、迁移以及使用 sqlx：：query！（） 和 friends 启用“离线”模式
+```
+
+```bash
+cargo install sqlx-cli
+
 ```

@@ -1,18 +1,13 @@
-use std::sync::OnceLock;
-use std::time::Duration;
-
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use captcha::Captcha;
 use common::response::ResponseResult;
 use common::{AppError, AppResult};
 use framework::db::DBPool;
 use framework::jwt::{JWTTool, TokenType};
-use moka::future::Cache;
 use monitor::login_info;
 use salvo::Request;
 use salvo::oapi::extract::{JsonBody, QueryParam};
 use salvo::{Writer, handler};
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::PgPool;
 use time::OffsetDateTime;
@@ -20,62 +15,13 @@ use tracing::{error, info};
 use user_agent_parser::UserAgentParser;
 use uuid::Uuid;
 
+use crate::model::{CapCache, CaptchaDTO, CaptchaVO, LoginDTO, PASER, TokenVO};
 use crate::user::service;
-
-#[derive(Debug, Serialize)]
-struct CaptchaVO {
-    id: String,
-    img: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct CaptchaDTO {
-    uuid: String,
-    code: String,
-}
-
-pub static CACHE: OnceLock<Cache<String, String>> = OnceLock::new();
-/// 验证码缓存
-#[derive(Debug, Clone, Copy)]
-pub struct CapCache;
-impl CapCache {
-    pub fn init_cache() -> &'static Cache<String, String> {
-        CACHE.get_or_init(|| {
-            Cache::builder()
-                .max_capacity(100)
-                .time_to_live(Duration::from_secs(300))
-                .build()
-        })
-    }
-    pub fn get_cache() -> AppResult<&'static Cache<String, String>> {
-        let cache = CACHE
-            .get()
-            .ok_or(AppError::Other("验证码缓存获取失败".to_string()))?;
-        Ok(cache)
-    }
-    pub async fn insert(k: &str, v: &str) -> AppResult<()> {
-        Self::get_cache()?
-            .insert(k.to_string(), v.to_string())
-            .await;
-        Ok(())
-    }
-
-    pub async fn get(k: &str) -> AppResult<Option<String>> {
-        let cache = Self::get_cache()?;
-        Ok(cache.get(k).await)
-    }
-
-    pub async fn remove(k: &str) -> AppResult<Option<String>> {
-        let cache = Self::get_cache()?;
-        Ok(cache.remove(k).await)
-    }
-}
-
-static PASER: OnceLock<UserAgentParser> = OnceLock::new();
 
 /// 处理获取验证码图片
 #[handler]
 pub async fn get_captcha_image() -> AppResult<ResponseResult<CaptchaVO>> {
+    info!("[HANDLER] Entering get  captcha image");
     // 生成 4 位验证码
     let captcha_string: String;
     let captcha_img: String;
@@ -111,16 +57,10 @@ pub async fn get_captcha_image() -> AppResult<ResponseResult<CaptchaVO>> {
     Ok(ResponseResult::success(captcha_vo))
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct TokenVO {
-    access_token: String,
-    refresh_token: String,
-}
-
 /// 刷新接口令牌的
 #[handler]
 pub async fn refresh_token_handler(req: &mut Request) -> AppResult<ResponseResult<TokenVO>> {
+    info!("[HANDLER]  Entering  refresh token");
     const REFTOKEN: &str = "refreshToken";
     let jwt_auth_util = JWTTool::get()?;
     let ref_token = req
@@ -143,19 +83,13 @@ pub async fn refresh_token_handler(req: &mut Request) -> AppResult<ResponseResul
     Ok(ResponseResult::success_with_msg("令牌刷新成功", token_vo))
 }
 
-#[derive(Debug, Deserialize)]
-pub struct LoginDTO {
-    username: String,
-    password: String,
-    captcha: CaptchaDTO,
-}
-
 ///登录
 #[handler]
 pub async fn login(
     login_dto: JsonBody<LoginDTO>,
     req: &mut Request,
 ) -> AppResult<ResponseResult<TokenVO>> {
+    info!("[HANDLER]  Entering login::with body:{:?}", login_dto);
     // 获取客户端地址
     let ipaddr = req
         .remote_addr()
@@ -208,9 +142,10 @@ pub async fn login(
             return Err(AppError::CaptchaError);
         }
     }
+    let db = DBPool::get().await?;
 
     //账号密码校验
-    let user = service::select_user_by_username(&username).await?;
+    let user = service::select_user_by_username(db, &username).await?;
     let user = match user {
         Some(user) => user,
         None => {
@@ -309,25 +244,11 @@ pub async fn login(
 
 #[handler]
 pub async fn register(
-    username: QueryParam<String>,
-    password: QueryParam<String>,
+    _username: QueryParam<String>,
+    _password: QueryParam<String>,
 ) -> AppResult<ResponseResult<Value>> {
-    let username = username.into_inner();
-    if username == "wdc" && password.into_inner() == "123" {
-        let jwt_auth_util = JWTTool::get()?;
-        let acc_token = jwt_auth_util.generate_token(username.clone(), TokenType::Access)?;
-        let ref_token = jwt_auth_util.generate_token(username, TokenType::Refresh)?;
-
-        let data = serde_json::json!({
-            "data": {
-                "access_token": acc_token,
-                "refresh_token": ref_token,
-            }
-        });
-        Ok(ResponseResult::success_with_msg("登录成功", data))
-    } else {
-        Err(AppError::InvalidCredentials)
-    }
+    //TODO:
+    todo!()
 }
 
 async fn record_login_log(
@@ -364,6 +285,7 @@ async fn record_login_log(
     });
 }
 
+/// test
 #[cfg(test)]
 mod test {
     use argon2::{
@@ -421,7 +343,6 @@ mod test {
         println!("{device_name}");
         println!("{os}");
         println!("{engine}");
-
         assert_eq!(1, 2)
     }
 }
