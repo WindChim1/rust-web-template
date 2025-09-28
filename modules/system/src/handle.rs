@@ -72,8 +72,8 @@ pub async fn refresh_token_handler(req: &mut Request) -> AppResult<ResponseResul
     // 校验 Refresh Token
     let ref_claims = jwt_auth_util.verify_ref_token(ref_token)?;
     // 若 Refresh Token 有效，生成新的 Access Token（刷新令牌可复用，或按需轮换）
-    let new_acc_token = jwt_auth_util.generate_token(ref_claims.sub.clone(), TokenType::Access)?;
-    let new_ref_token = jwt_auth_util.generate_token(ref_claims.sub.clone(), TokenType::Refresh)?;
+    let new_acc_token = jwt_auth_util.generate_token(ref_claims.sub, TokenType::Access)?;
+    let new_ref_token = jwt_auth_util.generate_token(ref_claims.sub, TokenType::Refresh)?;
 
     // 返回新的 Access Token 给前端
     let token_vo = TokenVO {
@@ -221,8 +221,8 @@ pub async fn login(
     }
     // 生成jwt
     let jwt_auth_util = JWTTool::get()?;
-    let acc_token = jwt_auth_util.generate_token(username.clone(), TokenType::Access)?;
-    let ref_token = jwt_auth_util.generate_token(username.clone(), TokenType::Refresh)?;
+    let acc_token = jwt_auth_util.generate_token(user.user_id, TokenType::Access)?;
+    let ref_token = jwt_auth_util.generate_token(user.user_id, TokenType::Refresh)?;
 
     let token_vo = TokenVO {
         access_token: acc_token,

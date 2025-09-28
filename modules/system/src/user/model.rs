@@ -9,7 +9,7 @@ use crate::role::model::SysRole;
 #[serde(rename_all = "camelCase")]
 pub struct SysUser {
     /// 用户ID
-    pub user_id: i64,
+    pub user_id: i32,
 
     /// 用户账号
     pub user_name: String,
@@ -80,7 +80,7 @@ fn default_del_flag() -> Option<String> {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SysUserVO {
-    pub user_id: i64,
+    pub user_id: i32,
     pub user_name: String,
     pub nick_name: String,
     pub user_type: Option<String>,

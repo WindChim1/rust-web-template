@@ -121,21 +121,22 @@ COMMENT ON COLUMN sys_dict_data.remark IS '备注';
 DROP TABLE IF EXISTS sys_menu;
 -- 创建菜单权限表
 CREATE TABLE sys_menu (
-    menu_id           SERIAL PRIMARY KEY,
-    menu_name         VARCHAR(50) NOT NULL,
-    parent_id         BIGINT DEFAULT 0,
-    order_num         INT DEFAULT 0,
-    path              VARCHAR(200) DEFAULT '',
-    query             VARCHAR(255),
-    route_name        VARCHAR(50) DEFAULT '',
-    menu_type         CHAR(1) DEFAULT '',
-    status            CHAR(1) DEFAULT '0',
-    icon              VARCHAR(100) DEFAULT '#',
-    create_by         VARCHAR(64) DEFAULT '',
-    create_time       TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    update_by         VARCHAR(64) DEFAULT '',
-    update_time       TIMESTAMPTZ,
-    remark            VARCHAR(500) DEFAULT ''
+                          menu_id           SERIAL PRIMARY KEY,
+                          menu_name         VARCHAR(50) NOT NULL,
+                          parent_id         BIGINT DEFAULT 0,
+                          order_num         INT DEFAULT 0,
+                          path              VARCHAR(200) DEFAULT '',
+                          query             VARCHAR(255),
+                          route_name        VARCHAR(50) DEFAULT '',
+                          component         varchar(255)    default null,
+                          menu_type         CHAR(1) DEFAULT '',
+                          status            CHAR(1) DEFAULT '0',
+                          icon              VARCHAR(100) DEFAULT '#',
+                          create_by         VARCHAR(64) DEFAULT '',
+                          create_time       TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                          update_by         VARCHAR(64) DEFAULT '',
+                          update_time       TIMESTAMPTZ,
+                          remark            VARCHAR(500) DEFAULT ''
 );
 
 -- 添加表和字段注释
@@ -147,6 +148,7 @@ COMMENT ON COLUMN sys_menu.order_num IS '显示顺序';
 COMMENT ON COLUMN sys_menu.path IS '路由地址';
 COMMENT ON COLUMN sys_menu.query IS '路由参数';
 COMMENT ON COLUMN sys_menu.route_name IS '路由名称';
+COMMENT ON COLUMN sys_menu.component IS  '路由组件';
 COMMENT ON COLUMN sys_menu.menu_type IS '菜单类型（M目录 C菜单 F按钮）';
 COMMENT ON COLUMN sys_menu.status IS '菜单状态（0正常 1停用）';
 COMMENT ON COLUMN sys_menu.icon IS '菜单图标';

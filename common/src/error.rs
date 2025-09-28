@@ -34,6 +34,8 @@ pub enum AppError {
     PermissionDenied,
     #[error(transparent)]
     JsonParseError(#[from] serde_json::Error),
+    #[error(transparent)]
+    TimeParseError(#[from] time::error::InvalidFormatDescription),
     #[error("{0}")]
     Other(String),
 }
@@ -88,6 +90,9 @@ impl Writer for AppError {
 
             AppError::JsonParseError(e) => {
                 (StatusCode::BAD_REQUEST, 400, format!("JSON格式错误: {}", e))
+            }
+            AppError::TimeParseError(e) => {
+                (StatusCode::BAD_REQUEST, 400, format!("时间格式错误: {}", e))
             }
             AppError::Other(e) => (StatusCode::INTERNAL_SERVER_ERROR, 500, e.to_owned()),
         };

@@ -1,8 +1,8 @@
-use common::{AppError, AppResult};
-use sqlx::{PgPool, Postgres, Transaction};
+use common::{AppError, AppResult, SqlBuilder, page_reponse::PageReponse, utils::time};
+use sqlx::{PgPool, Postgres, QueryBuilder, Transaction};
 use tracing::info;
 
-use crate::role::model::{RoleDTO, SysRole};
+use crate::role::model::{ListRoleQuery, RoleDTO, SysRole};
 /// 新增角色，并处理其与菜单的关联关系（事务性）
 pub async fn add_role(db: &PgPool, vo: RoleDTO) -> Result<u8, AppError> {
     info!("[SERVICE] Entering add_role with vo: {:?}", vo);
@@ -71,21 +71,198 @@ async fn insert_role_menu(
     info!("[TX_HELPER] Successfully inserted menu associations.");
     Ok(())
 }
+/// 辅助函数：在事务中删除角色与菜单的关联记录
+async fn delete_role_menu_by_role_id(
+    tx: &mut Transaction<'_, Postgres>,
+    role_id: i32,
+) -> Result<u64, AppError> {
+    let result = sqlx::query!("DELETE FROM sys_role_menu WHERE role_id = $1", role_id)
+        .execute(&mut **tx)
+        .await?;
+    Ok(result.rows_affected())
+}
 
-// #[cfg(test)]
-// mod user_test {
-//     use framework::db::DBPool;
+///更新角色，并处理其与菜单的关联关系（事务性）
+pub(crate) async fn update_role(db: &PgPool, role: RoleDTO) -> AppResult<u64, AppError> {
+    info!("[SERVICE] Entering update_role with role: {:?}", role);
+    let mut tx = db.begin().await?;
+    let result = sqlx::query!(
+            r#"
+            UPDATE sys_role
+            SET role_name = $1, role_key = $2, role_sort = $3, status = $4, remark = $5, update_by = 'admin', update_time = NOW()
+            WHERE role_id = $6
+            "#,
+            role.role_name,
+            role.role_key,
+            role.role_sort,
+            role.status,
+            role.remark,
+            role.role_id
+        )
+        .execute(&mut *tx)
+        .await?;
+    // 先删除旧的关联
+    if let Some(menu_ids) = role
+        .menu_ids
+        .as_ref()
+        .filter(|menu_ids| !menu_ids.is_empty())
+    {
+        // 先删除旧的关联
+        delete_role_menu_by_role_id(&mut tx, role.role_id.unwrap()).await?;
+        // 再插入新的关联
+        insert_role_menu(&mut tx, role.role_id.unwrap(), menu_ids).await?;
+    }
+    tx.commit().await?;
+    info!("[SERVICE] Role updated successfully: {:?}", role);
+    Ok(result.rows_affected())
+}
 
-//     use crate::user::model::SysUserDTO;
-//     #[tokio::test]
-//     async fn test() -> anyhow::Result<()> {
-//         let url = "postgres://postgres:Sky%402024@172.16.100.200:25432/project?options=-c%20search_path%3Dsky_website";
-//         let db = DBPool::inint(url).await?;
-//         SysUserDTO{ user_name: "admin".to_string(),
-//             nick_name: "admin".to_string(), user_type:None
-//             , email: None, phone_number: None, avatar: None, password: "admin".to_string(), status: None, remark: None, role_ids: todo!() }
+/// 删除角色，并处理其与菜单的关联关系（事务性）
+pub(crate) async fn delete_role(db: &PgPool, role_id: i32) -> AppResult<u64, AppError> {
+    info!("[SERVICE] Entering delete_role with role_id: {}", role_id);
+    let mut tx = db.begin().await?;
+    // 先删除角色与菜单的关联
+    delete_role_menu_by_role_id(&mut tx, role_id).await?;
+    // 再删除角色本身
+    let result = sqlx::query!("DELETE FROM sys_role WHERE role_id = $1", role_id)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    Ok(result.rows_affected())
+}
 
-//         // pub async fn add_user(db: &PgPool, sys_user_dto: SysUserDTO) -> AppResult<u64, AppError>
-//         Ok(())
-//     }
-// }
+/// 根据角色ID查询角色详情
+pub(crate) async fn select_by_id(db: &PgPool, role_id: i32) -> AppResult<SysRole> {
+    info!("[SERVICE] Entering get_by_id with role_id: {}", role_id);
+    let role = sqlx::query_as!(
+        SysRole,
+        "SELECT * FROM sys_role WHERE role_id = $1",
+        role_id
+    )
+    .fetch_one(db)
+    .await?;
+    Ok(role)
+}
+///根据角色id查询菜单列表
+pub async fn select_menu_ids_by_role_id(db: &PgPool, role_id: i32) -> AppResult<Vec<i32>> {
+    info!("[SERVICE] Select menu list by role id:{}", role_id);
+    let menu_ids = sqlx::query!(
+        "select menu_id from  sys_role_menu  where  role_id = $1",
+        role_id
+    )
+    .fetch_all(db)
+    .await?
+    .into_iter()
+    .map(|record| record.menu_id)
+    .collect();
+    Ok(menu_ids)
+}
+
+///根据条件分页查询角色列表
+pub(crate) async fn page_role(
+    db: &'static PgPool,
+    query_page: ListRoleQuery,
+) -> AppResult<PageReponse<SysRole>> {
+    info!("[SERVICE] Entering page_role with query: {:?}", query_page);
+    let query_builder = QueryBuilder::new("select * from  sys_role where del_flag  = '0' ");
+    let count_builder = QueryBuilder::new("select count(1) from  sys_role where del_flag  = '0' ");
+    let mut sql_builder = SqlBuilder::new(query_builder, Some(count_builder));
+    // //构建条件
+
+    let start_time = match query_page.begin_time {
+        Some(s) => {
+            let start_time = time::flexible_parse_datetime(s.as_str())?;
+            start_time
+        }
+        None => None,
+    };
+    let end_time = match query_page.end_time {
+        Some(s) => {
+            let start_time = time::flexible_parse_datetime(s.as_str())?;
+            start_time
+        }
+        None => None,
+    };
+
+    sql_builder
+        .build_condition(query_page.role_key, " and role_key like  ", |role_key| {
+            format!("%{}%", role_key.trim())
+        })
+        .build_condition(query_page.role_name, " and role_name like  ", |role_name| {
+            format!("%{}%", role_name.trim())
+        })
+        .build_condition(query_page.status, " and status =  ", |status| status)
+        .build_condition(start_time, " and create_time >=  ", |start_time| start_time)
+        .build_condition(end_time, " and create_time <= ", |end_time| end_time);
+
+    let mut page = 1;
+    let mut page_size = 10;
+
+    if let Some(pr) = query_page.page {
+        page = pr.page;
+        page_size = pr.page_size;
+        sql_builder
+            .build_query_condition(Some(page_size), " order by role_sort limit ", |page_size| {
+                page_size
+            })
+            .build_query_condition(Some(pr.offset()), " offset ", |page_index| page_index);
+    }
+
+    let count = match sql_builder.count_builder {
+        Some(mut count_builder) => {
+            let count: (i64,) = count_builder.build_query_as().fetch_one(db).await?;
+            count.0 as u64
+        }
+        None => 0,
+    };
+    info!("[SERVICE]  Role cost count: {:?}", count);
+
+    let list: Vec<SysRole> = sql_builder
+        .query_builder
+        .build_query_as()
+        .fetch_all(db)
+        .await?;
+    info!("[SERVICE] Page role list: {:?}", list);
+    Ok(PageReponse::new(list, page as u64, page_size as u64, count))
+}
+
+#[cfg(test)]
+mod user_test {
+
+    use common::{AppResult, page_reqest::PageRequest};
+    use framework::db::DBPool;
+    use sqlx::{Pool, Postgres};
+
+    use crate::role::model::ListRoleQuery;
+    async fn get_db_test() -> AppResult<&'static Pool<Postgres>> {
+        let url = "postgres://postgres:Sky%402024@172.16.100.200:25432/project?options=-c%20search_path%3Dsky_website";
+        let db = DBPool::inint(url).await?;
+        Ok(db)
+    }
+
+    #[tokio::test]
+    async fn select_by_id_test() -> anyhow::Result<()> {
+        let db = get_db_test().await?;
+        let role = super::select_by_id(db, 1).await?;
+        println!("{role:?}");
+        Ok(())
+    }
+    #[tokio::test]
+    async fn page_role_test() -> anyhow::Result<()> {
+        let db = get_db_test().await?;
+        let query = ListRoleQuery {
+            role_name: Some("超级".to_string()),
+            role_key: Some("admin".to_string()),
+            status: Some('1'.to_string()),
+            begin_time: Some("2023-01-01 00:00:00".to_string()),
+            end_time: Some("2026-01-02 00:00:00".to_string()),
+            page: Some(PageRequest {
+                page: 1,
+                page_size: 10,
+            }),
+        };
+        let role = super::page_role(db, query).await?;
+        println!("{role:?}");
+        Ok(())
+    }
+}

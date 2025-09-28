@@ -42,9 +42,9 @@ pub struct ListRoleQuery {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct RoleDTO {
-    pub role_id: i32, // 修改时必须携带ID
+    pub role_id: Option<i32>, // 修改时必须携带ID
     pub role_name: String,
-    pub role_key: String,
+    pub role_key: String, // 唯一标识,角色权限字符串
     pub role_sort: i32,
     pub status: String,
     pub remark: Option<String>,

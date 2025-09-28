@@ -79,7 +79,7 @@ pub enum TokenType {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     /// 用户账号
-    pub sub: String,
+    pub sub: i32,
     /// 验证过期时间（Unix时间戳，秒）
     pub exp: u64,
     /// 刷新过期时间（Unix时间戳，秒）
@@ -93,7 +93,7 @@ pub struct Claims {
 
 impl Claims {
     /// 创建新的默认声明
-    pub fn new(sub: String, config: &JwtConfig, token_type: TokenType) -> Self {
+    pub fn new(sub: i32, config: &JwtConfig, token_type: TokenType) -> Self {
         let now = time::OffsetDateTime::now_utc().unix_timestamp() as u64;
         let iss = config.issuer.clone();
         match token_type {
@@ -127,7 +127,7 @@ impl JwtAuthUtil {
     }
 
     /// 生成令牌
-    pub fn generate_token(&self, subject: String, token_type: TokenType) -> AppResult<String> {
+    pub fn generate_token(&self, subject: i32, token_type: TokenType) -> AppResult<String> {
         let claims = Claims::new(subject, &self.config, token_type);
         let token = encode(
             &Header::new(self.config.algorithm),
@@ -199,7 +199,7 @@ mod test {
         // Initialize jwt auth util
         JWTTool::init((&setting.jwt).into());
         let jwt_auth_util = JWTTool::get()?;
-        let acc_token = jwt_auth_util.generate_token("wdc".to_string(), TokenType::Access)?;
+        let acc_token = jwt_auth_util.generate_token(1, TokenType::Access)?;
         println!("{acc_token}");
         let claims = jwt_auth_util.verify_acc_token(&acc_token)?;
         println!("{claims:?}");

@@ -1,3 +1,4 @@
+use common::AppError;
 use common::{AppResult, response::ResponseResult};
 use framework::db::DBPool;
 use salvo::Writer;
@@ -17,6 +18,12 @@ pub async fn add_user(user: JsonBody<SysUserDTO>) -> AppResult<ResponseResult<()
     info!("[HANDLER_ADD] Entering clean 'add' handler.");
     let user = user.into_inner();
     let db = DBPool::get().await?;
+    //1.控制user_name唯一性
+    user::service::select_user_by_username(db, &user.user_name)
+        .await
+        .map(|o| o.map(|_| AppError::Other("用户名已存在".to_string())))?;
+
+    //2.添加用户
     user::service::add_user(db, user).await?;
     ResponseResult::success_msg("添加成功").into()
 }
