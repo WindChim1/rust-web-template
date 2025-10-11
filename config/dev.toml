@@ -17,6 +17,6 @@ secret = "your-super-secret-key-that-is-at-least-32-bytes-long"
 # 签发者 应用名或者域名或者ip+port
 issuer = "rust-web-template"
 # JWT  token过期时间，单位：分钟
-acc_expiration_hour = 1
+acc_expiration_hour = 30
 # JWT token刷新时间，单位：分钟
-ref_expiration_hour = 2
+ref_expiration_hour = 60

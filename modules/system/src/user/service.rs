@@ -2,11 +2,11 @@ use argon2::{
     Argon2,
     password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
 };
-use common::{AppError, AppResult};
-use sqlx::{PgPool, Postgres, Transaction};
+use common::{AppError, AppResult, page_reponse::PageReponse};
+use sqlx::{PgPool, Postgres, QueryBuilder, Transaction};
 use tracing::info;
 
-use crate::user::model::{SysUser, SysUserDTO, SysUserVO};
+use crate::user::model::{self, SysUser, SysUserDTO, SysUserVO};
 
 pub async fn select_user_by_username(db: &PgPool, user_name: &str) -> AppResult<Option<SysUser>> {
     info!(
@@ -132,4 +132,70 @@ mod user_test {
 
         Ok(())
     }
+}
+
+pub(crate) async fn select_user_page(
+    db: &PgPool,
+    page_query: model::ListUserQuery,
+) -> AppResult<PageReponse<SysUserVO>> {
+    info!(
+        "[SERVICE] Entering select_user_page with page_query: {:?}",
+        page_query
+    );
+
+    let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
+        "SELECT u.*, d.dept_name
+         FROM sys_user u
+         LEFT JOIN sys_dept d ON u.dept_id = d.dept_id
+         WHERE u.del_flag = '0'",
+    );
+
+    let mut count_builder: QueryBuilder<Postgres> = QueryBuilder::new(
+        "SELECT COUNT(*)
+         FROM sys_user u
+         LEFT JOIN sys_dept d ON u.dept_id = d.dept_id
+         WHERE u.del_flag = '0'",
+    );
+
+    if let Some(name) = page_query.user_name {
+        if !name.trim().is_empty() {
+            let condition = format!("%{}%", name);
+            query_builder
+                .push(" AND u.user_name LIKE ")
+                .push_bind(condition.clone());
+            count_builder
+                .push(" AND u.user_name LIKE ")
+                .push_bind(condition);
+        }
+    }
+    if let Some(phone) = page_query.phonenumber {
+        if !phone.trim().is_empty() {
+            let condition = format!("%{}%", phone);
+            query_builder
+                .push(" AND u.phonenumber LIKE ")
+                .push_bind(condition.clone());
+            count_builder
+                .push(" AND u.phonenumber LIKE ")
+                .push_bind(condition);
+        }
+    }
+    if let Some(status) = page_query.status {
+        if !status.trim().is_empty() {
+            query_builder
+                .push(" AND u.status = ")
+                .push_bind(status.clone());
+            count_builder.push(" AND u.status = ").push_bind(status);
+        }
+    }
+    let total: (i64,) = count_builder.build_query_as().fetch_one(db).await?;
+
+    // let page_num = page_query.page_num.unwrap_or(1);
+    // let page_size = page_query.page_size.unwrap_or(10);
+    // let offset = (page_num - 1) * page_size;
+    // query_builder
+    //     .push(" ORDER BY u.create_time DESC LIMIT ")
+    //     .push_bind(page_size)
+    //     .push(" OFFSET ")
+    //     .push_bind(offset);
+    todo!()
 }

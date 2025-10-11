@@ -13,17 +13,17 @@ pub struct PageReponse<T> {
 #[derive(Debug, Serialize)]
 pub struct PageMeta {
     /// 当前页码
-    pub page: u64,
+    pub page: u32,
     /// 每页条数
-    pub page_size: u64,
+    pub page_size: u32,
     /// 总条数
-    pub total: u64,
+    pub total: u32,
     /// 总页数
-    pub total_pages: u64,
+    pub total_pages: u32,
 }
 impl<T> PageReponse<T> {
     /// 创建分页响应
-    pub fn new(items: Vec<T>, page: u64, page_size: u64, total: u64) -> Self {
+    pub fn new(items: Vec<T>, page: u32, page_size: u32, total: u32) -> Self {
         let total_pages = if total == 0 {
             0
         } else {

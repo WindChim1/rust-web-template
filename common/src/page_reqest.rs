@@ -4,14 +4,14 @@ use serde::Deserialize;
 pub struct PageRequest {
     /// 页码，默认为1
     #[serde(default = "default_page")]
-    pub page: i32,
+    pub page: u32,
     /// 每页条数，默认为10，最大100
     #[serde(default = "default_page_size")]
-    pub page_size: i32,
+    pub page_size: u32,
 }
 impl PageRequest {
     /// 计算偏移量（用于数据库查询）
-    pub fn offset(&self) -> i32 {
+    pub fn offset(&self) -> u32 {
         (self.page - 1) * self.page_size
     }
 
@@ -30,11 +30,11 @@ impl PageRequest {
 }
 
 // 默认页码
-fn default_page() -> i32 {
+fn default_page() -> u32 {
     1
 }
 
 // 默认每页条数
-fn default_page_size() -> i32 {
+fn default_page_size() -> u32 {
     10
 }

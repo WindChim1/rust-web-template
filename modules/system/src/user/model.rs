@@ -1,3 +1,5 @@
+use common::page_reqest::PageRequest;
+use moka::ops::compute::Op;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use time::OffsetDateTime;
@@ -134,4 +136,16 @@ pub struct SysUserDTO {
     pub status: Option<String>,
     pub remark: Option<String>,
     pub role_ids: Option<Vec<i32>>, // 关联的角色ID列表
+}
+
+/// 用户列表查询的参数结构体
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ListUserQuery {
+    pub user_name: Option<String>,
+    pub phonenumber: Option<String>,
+    pub status: Option<String>,
+    pub begin_time: Option<String>,
+    pub end_time: Option<String>,
+    pub page: Option<PageRequest>,
 }

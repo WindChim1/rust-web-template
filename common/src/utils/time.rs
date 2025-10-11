@@ -16,11 +16,6 @@ pub fn flexible_parse_datetime(s: &str) -> AppResult<Option<OffsetDateTime>> {
         time::format_description::parse("[year]/[month]/[day] [hour]:[minute]:[second]")?,
     ];
 
-    // // 尝试解析完整的ISO 8601格式
-    // if let Ok(dt) = OffsetDateTime::parse(s, &Iso8601::DEFAULT) {
-    //     return Ok(dt);
-    // }
-
     for format in formats.iter() {
         // 尝试解析为OffsetDateTime（带时区）
         if let Ok(dt) = OffsetDateTime::parse(s, format) {

@@ -12,8 +12,8 @@ pub mod user;
 
 pub fn init_router() -> Router {
     Router::new()
-        //系统级别router
         .path("sys")
+        //系统级别router
         .push(
             Router::new()
                 //获取验证码
@@ -23,13 +23,16 @@ pub fn init_router() -> Router {
                 //刷新token
                 .push(Router::with_path("refresh_token").post(refresh_token_handler)),
         )
-        .hoop(auth)
-        //用户相关router
-        .push(user::init_router())
-        //枚举相关接口
-        .push(dict::init_router())
-        //菜单相关
-        .push(menu::init_router())
-        //角色相关
-        .push(role::init_router())
+        .push(
+            Router::new()
+                .hoop(auth)
+                //用户相关router
+                .push(user::init_router())
+                //枚举相关接口
+                .push(dict::init_router())
+                //菜单相关
+                .push(menu::init_router())
+                //角色相关
+                .push(role::init_router()),
+        )
 }

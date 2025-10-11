@@ -1,5 +1,5 @@
 use common::{AppError, AppResult, SqlBuilder, page_reponse::PageReponse, utils::time};
-use sqlx::{PgPool, Postgres, QueryBuilder, Transaction};
+use sqlx::{PgPool, Postgres, Transaction};
 use tracing::info;
 
 use crate::role::model::{ListRoleQuery, RoleDTO, SysRole};
@@ -164,66 +164,41 @@ pub(crate) async fn page_role(
     query_page: ListRoleQuery,
 ) -> AppResult<PageReponse<SysRole>> {
     info!("[SERVICE] Entering page_role with query: {:?}", query_page);
-    let query_builder = QueryBuilder::new("select * from  sys_role where del_flag  = '0' ");
-    let count_builder = QueryBuilder::new("select count(1) from  sys_role where del_flag  = '0' ");
-    let mut sql_builder = SqlBuilder::new(query_builder, Some(count_builder));
-    // //构建条件
-
+    //处理时间条件
     let start_time = match query_page.begin_time {
-        Some(s) => {
-            let start_time = time::flexible_parse_datetime(s.as_str())?;
-            start_time
-        }
+        Some(s) => time::flexible_parse_datetime(s.as_str())?,
         None => None,
     };
     let end_time = match query_page.end_time {
-        Some(s) => {
-            let start_time = time::flexible_parse_datetime(s.as_str())?;
-            start_time
-        }
+        Some(s) => time::flexible_parse_datetime(s.as_str())?,
         None => None,
     };
-
+    // //构建条件
+    let mut sql_builder = SqlBuilder::for_pagination(db, "*", "sys_role", Some("del_flag  = '0'"));
     sql_builder
-        .build_condition(query_page.role_key, " and role_key like  ", |role_key| {
-            format!("%{}%", role_key.trim())
-        })
-        .build_condition(query_page.role_name, " and role_name like  ", |role_name| {
-            format!("%{}%", role_name.trim())
-        })
-        .build_condition(query_page.status, " and status =  ", |status| status)
-        .build_condition(start_time, " and create_time >=  ", |start_time| start_time)
-        .build_condition(end_time, " and create_time <= ", |end_time| end_time);
+        .where_like("role_key", query_page.role_key.as_deref())
+        .where_like("role_name", query_page.role_name.as_deref())
+        .where_eq("status", query_page.status)
+        .where_ge("create_time", start_time)
+        .where_le("create_time", end_time);
 
+    // 处理分页
     let mut page = 1;
     let mut page_size = 10;
-
     if let Some(pr) = query_page.page {
         page = pr.page;
         page_size = pr.page_size;
-        sql_builder
-            .build_query_condition(Some(page_size), " order by role_sort limit ", |page_size| {
-                page_size
-            })
-            .build_query_condition(Some(pr.offset()), " offset ", |page_index| page_index);
+        sql_builder.paginate(pr.page, pr.page_size);
     }
 
-    let count = match sql_builder.count_builder {
-        Some(mut count_builder) => {
-            let count: (i64,) = count_builder.build_query_as().fetch_one(db).await?;
-            count.0 as u64
-        }
-        None => 0,
-    };
+    // 查询总数
+    let count = sql_builder.count().await?;
     info!("[SERVICE]  Role cost count: {:?}", count);
 
-    let list: Vec<SysRole> = sql_builder
-        .query_builder
-        .build_query_as()
-        .fetch_all(db)
-        .await?;
+    //查询列表
+    let list: Vec<SysRole> = sql_builder.fetch_all().await?;
     info!("[SERVICE] Page role list: {:?}", list);
-    Ok(PageReponse::new(list, page as u64, page_size as u64, count))
+    Ok(PageReponse::new(list, page, page_size, count))
 }
 
 #[cfg(test)]
@@ -247,6 +222,7 @@ mod user_test {
         println!("{role:?}");
         Ok(())
     }
+
     #[tokio::test]
     async fn page_role_test() -> anyhow::Result<()> {
         let db = get_db_test().await?;
@@ -263,6 +239,7 @@ mod user_test {
         };
         let role = super::page_role(db, query).await?;
         println!("{role:?}");
+        assert_eq!(1, 2);
         Ok(())
     }
 }
