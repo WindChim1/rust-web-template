@@ -1,6 +1,13 @@
 [workspace]
 resolver = "2"
-members = [ "app","common", "framework", "modules", "modules/system","modules/monitor"]
+members = [
+  "app",
+  "common",
+  "framework",
+  "modules",
+  "modules/system",
+  "modules/monitor",
+]
 
 [workspace.dependencies]
 tokio = { version = "1.47.1", features = ["full"] }
@@ -9,18 +16,20 @@ serde = { version = "1.0.219", features = ["derive"] }
 jsonwebtoken = "9.3.1"
 serde_json = "1.0.143"
 tracing = "0.1.41"
-time= {version ="0.3.11", features = ["serde", "formatting", "local-offset"]}
-tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
-salvo = { version = "0.84.0", features = [
-  "oapi",
+time = { version = "0.3.11", features = [
+  "serde",
+  "formatting",
+  "local-offset",
 ] }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+salvo = { version = "0.84.0", features = ["oapi"] }
 sqlx = { version = "0.8.6", features = [
-    "time",
-    "postgres",
-    "macros",
-    "runtime-tokio",
-    "tls-rustls",
-    "uuid"
+  "time",
+  "postgres",
+  "macros",
+  "runtime-tokio",
+  "tls-rustls",
+  "uuid",
 ] }
 moka = { version = "0.12.10", features = ["future"] }
 anyhow = "1.0.99"

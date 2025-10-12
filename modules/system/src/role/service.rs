@@ -83,7 +83,7 @@ async fn delete_role_menu_by_role_id(
 }
 
 ///更新角色，并处理其与菜单的关联关系（事务性）
-pub(crate) async fn update_role(db: &PgPool, role: RoleDTO) -> AppResult<u64, AppError> {
+pub(crate) async fn update_role(db: &PgPool, role: RoleDTO) -> AppResult<u64> {
     info!("[SERVICE] Entering update_role with role: {:?}", role);
     let mut tx = db.begin().await?;
     let result = sqlx::query!(
@@ -201,6 +201,22 @@ pub(crate) async fn page_role(
     Ok(PageReponse::new(list, page, page_size, count))
 }
 
+///修改角色状态
+pub(crate) async fn change_status(db: &PgPool, role_id: u32, status: String) -> AppResult<u64> {
+    info!(
+        "[SERVICE] Entering change_status with role_id: {}, status: {}",
+        role_id, status
+    );
+    let result = sqlx::query!(
+            "UPDATE sys_role SET status = $1, update_by = 'admin', update_time = NOW() WHERE role_id = $2",
+            status,
+            role_id as i32
+        ).execute(db)
+            .await?;
+    Ok(result.rows_affected())
+}
+
+//单元测试
 #[cfg(test)]
 mod user_test {
 
@@ -215,6 +231,7 @@ mod user_test {
         Ok(db)
     }
 
+    //新增角色测试
     #[tokio::test]
     async fn select_by_id_test() -> anyhow::Result<()> {
         let db = get_db_test().await?;
@@ -223,6 +240,7 @@ mod user_test {
         Ok(())
     }
 
+    //分页查询角色测试
     #[tokio::test]
     async fn page_role_test() -> anyhow::Result<()> {
         let db = get_db_test().await?;

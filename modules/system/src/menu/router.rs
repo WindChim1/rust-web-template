@@ -7,8 +7,8 @@ pub fn init_router() -> Router {
         .path("menu")
         .push(Router::with_path("add").post(add))
         .push(Router::with_path("update").put(update))
-        .push(Router::with_path("delete/{id}").delete(delete))
+        .push(Router::with_path("delete/{menu_id}").delete(delete))
         .push(Router::with_path("list").get(list))
-        .push(Router::with_path("{id}").get(get_detail))
+        .push(Router::with_path("{menu_id}").get(get_detail))
         .push(Router::with_path("menu_tree").get(get_menu_tree))
 }

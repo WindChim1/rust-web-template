@@ -31,8 +31,8 @@ pub async fn add_user(user: JsonBody<SysUserDTO>) -> AppResult<ResponseResult<()
 
 /// 查看用户信息
 #[handler]
-pub async fn get_detail(id: PathParam<i32>) -> AppResult<ResponseResult<SysUserVO>> {
-    let user_id = id.into_inner();
+pub async fn get_detail(user_id: PathParam<i32>) -> AppResult<ResponseResult<SysUserVO>> {
+    let user_id = user_id.into_inner();
     info!(
         "[HANDLER] Entering user::get_detail with user_id: {}",
         user_id
@@ -46,17 +46,17 @@ pub async fn get_detail(id: PathParam<i32>) -> AppResult<ResponseResult<SysUserV
     ResponseResult::success(user_vo).into()
 }
 
+/// 用户分页列表
 #[handler]
-pub async fn page_list(
+pub async fn page(
     page_query: JsonBody<model::ListUserQuery>,
 ) -> AppResult<ResponseResult<PageReponse<SysUserVO>>> {
     info!("[HANDLER] Entering user::page_list.");
     let db = DBPool::get().await?;
-    // let mut user_list = user::service::select_user_page(db, page_query).await?;
-    // for user in user_list.data.iter_mut() {
-    //     let role_list = role::service::select_role_list_by_user_id(db, user.user_id).await?;
-    //     user.role_list = Some(role_list);
-    // }
-    // ResponseResult::success(PageReponse::new(user_list)).into()
-    todo!()
+    let mut user_list = user::service::select_user_page(db, page_query.into_inner()).await?;
+    for user in user_list.items.iter_mut() {
+        let role_list = role::service::select_role_list_by_user_id(db, user.user_id).await?;
+        user.role_list = Some(role_list);
+    }
+    ResponseResult::success(user_list).into()
 }

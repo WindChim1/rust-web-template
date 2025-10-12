@@ -4,11 +4,12 @@ use common::page_reponse::PageReponse;
 use common::{AppResult, response::ResponseResult};
 use framework::db::DBPool;
 use salvo::Writer;
-use salvo::oapi::extract::PathParam;
+use salvo::oapi::extract::{PathParam, QueryParam};
 use salvo::{handler, oapi::extract::JsonBody};
 use serde_json::{Value, json};
 use tracing::info;
 
+/// 新增角色
 #[handler]
 pub async fn add(role: JsonBody<RoleDTO>) -> AppResult<ResponseResult<()>> {
     let role = role.into_inner();
@@ -18,6 +19,7 @@ pub async fn add(role: JsonBody<RoleDTO>) -> AppResult<ResponseResult<()>> {
     ResponseResult::success_msg("新增成功").into()
 }
 
+/// 删除角色
 #[handler]
 pub async fn delete(role_id: PathParam<i32>) -> AppResult<ResponseResult<()>> {
     info!(
@@ -29,6 +31,7 @@ pub async fn delete(role_id: PathParam<i32>) -> AppResult<ResponseResult<()>> {
     ResponseResult::success_msg("删除成功").into()
 }
 
+/// 修改角色
 #[handler]
 pub async fn update(role: JsonBody<RoleDTO>) -> AppResult<ResponseResult<()>> {
     let role = role.into_inner();
@@ -41,6 +44,7 @@ pub async fn update(role: JsonBody<RoleDTO>) -> AppResult<ResponseResult<()>> {
     ResponseResult::success_msg("修改成功").into()
 }
 
+/// 获取角色详情
 #[handler]
 pub async fn get_detail(role_id: PathParam<i32>) -> AppResult<ResponseResult<Value>> {
     let role_id = role_id.into_inner();
@@ -57,6 +61,23 @@ pub async fn get_detail(role_id: PathParam<i32>) -> AppResult<ResponseResult<Val
     ResponseResult::success(data).into()
 }
 
+#[handler]
+pub async fn change_status(
+    role_id: QueryParam<u32>,
+    status: QueryParam<String>,
+) -> AppResult<ResponseResult<()>> {
+    let role_id = role_id.into_inner();
+    let status = status.into_inner();
+    info!(
+        "[HANDLER] Entering role::change_status  with role_id: {:?}, status: {:?}",
+        role_id, status
+    );
+    let db = DBPool::get().await?;
+    service::change_status(db, role_id, status).await?;
+    ResponseResult::success_msg("状态修改成功").into()
+}
+
+/// 角色列表（分页）
 #[handler]
 pub async fn page(
     query_page: JsonBody<ListRoleQuery>,

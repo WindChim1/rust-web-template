@@ -25,6 +25,7 @@ pub fn init_router() -> Router {
         )
         .push(
             Router::new()
+                //需要认证的路由
                 .hoop(auth)
                 //用户相关router
                 .push(user::init_router())

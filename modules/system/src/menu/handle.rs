@@ -68,15 +68,15 @@ pub async fn list() -> AppResult<ResponseResult<Vec<MenuTreeVo>>> {
 
 //获取菜单详情信息
 #[handler]
-pub async fn get_detail(id: PathParam<i32>) -> AppResult<ResponseResult<SysMenu>> {
-    let menu = service::select_menu_by_id(DBPool::get().await?, id.into_inner()).await?;
+pub async fn get_detail(menu_id: PathParam<i32>) -> AppResult<ResponseResult<SysMenu>> {
+    let menu = service::select_menu_by_id(DBPool::get().await?, menu_id.into_inner()).await?;
     ResponseResult::success(menu).into()
 }
 
 //删除菜单
 #[handler]
-pub async fn delete(id: PathParam<i32>) -> AppResult<ResponseResult<()>> {
-    service::delete_menu_by_id(DBPool::get().await?, id.into_inner()).await?;
+pub async fn delete(menu_id: PathParam<i32>) -> AppResult<ResponseResult<()>> {
+    service::delete_menu_by_id(DBPool::get().await?, menu_id.into_inner()).await?;
     ResponseResult::success_msg("删除成功").into()
 }
 
