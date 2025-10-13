@@ -4,13 +4,13 @@ use common::{AppResult, response::ResponseResult};
 use framework::db::DBPool;
 use salvo::Writer;
 use salvo::handler;
-use salvo::oapi::extract::JsonBody;
 use salvo::oapi::extract::PathParam;
+use salvo::oapi::extract::{JsonBody, QueryParam};
 use tracing::info;
 
 use crate::role;
-use crate::user::model::SysUserDTO;
 use crate::user::model::SysUserVO;
+use crate::user::model::{SysUserDTO, UpdateUserDTO};
 use crate::user::{self, model};
 
 /// 添加用户
@@ -59,4 +59,66 @@ pub async fn page(
         user.role_list = Some(role_list);
     }
     ResponseResult::success(user_list).into()
+}
+
+/// 修改用户密码
+#[handler]
+pub async fn reset_pwd(
+    user_id: QueryParam<i32>,
+    pwd: QueryParam<String>,
+) -> AppResult<ResponseResult<()>> {
+    let user_id: i32 = user_id.into_inner();
+    let pwd = pwd.into_inner();
+
+    info!(
+        "[HANDLER] Entering user::update_pwd with user_id: {}, pwd: {}",
+        user_id, pwd
+    );
+    let db = DBPool::get().await?;
+    user::service::reset_user_password(db, user_id, &pwd).await?;
+    ResponseResult::success_msg("修改密码成功").into()
+}
+
+/// 删除用户
+#[handler]
+pub async fn delete(user_id: PathParam<i32>) -> AppResult<ResponseResult<()>> {
+    let user_id = user_id.into_inner();
+    info!("[HANDLER] Entering user::delete with user_id: {}", user_id);
+    let db = DBPool::get().await?;
+    user::service::delete(db, user_id).await?;
+    ResponseResult::success_msg("删除成功").into()
+}
+
+///修改用户
+#[handler]
+pub async fn update_user(user: JsonBody<UpdateUserDTO>) -> AppResult<ResponseResult<()>> {
+    info!(
+        "[HANDLER_UPDATE] Entering clean 'update' handler. user: {:?}",
+        user
+    );
+    let user = user.into_inner();
+    let db = DBPool::get().await?;
+
+    //2.修改用户
+    user::service::update_user(db, user).await?;
+    ResponseResult::success_msg("修改成功").into()
+}
+
+/// 修改用户角色
+#[handler]
+pub async fn update_user_roles(
+    user_id: QueryParam<i32>,
+    role_ids: QueryParam<Vec<i32>>,
+) -> AppResult<ResponseResult<()>> {
+    let user_id = user_id.into_inner();
+    let role_ids = role_ids.into_inner();
+    info!(
+        "[HANDLER_UPDATE] Entering clean 'update_user_roles' handler. user_id: {}, role_ids: {:?}",
+        user_id, role_ids
+    );
+    let db = DBPool::get().await?;
+    if !role_ids.is_empty() {
+        user::service::update_user_roles(db, user_id, &role_ids).await?;
+    }
+    ResponseResult::success_msg("修改成功").into()
 }

@@ -42,6 +42,8 @@ pub struct SysMenu {
     #[serde(default = "default_status")]
     pub status: String, // char，默认'0'
 
+    #[serde(default = "default_string")]
+    pub perm: String,
     /// 菜单图标
     #[serde(default = "default_icon")]
     pub icon: String, // varchar(100)，默认'#'
@@ -145,6 +147,7 @@ pub struct MenuDTO {
     pub component: Option<String>,
     pub menu_type: String,
     pub status: String,
+    pub perms: Option<String>,
     pub icon: Option<String>,
     pub remark: Option<String>,
 }

@@ -3,13 +3,10 @@ use argon2::{
     password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
 };
 use common::{AppError, AppResult, SqlBuilder, page_reponse::PageReponse};
-use sqlx::{PgPool, Postgres, QueryBuilder, Transaction};
+use sqlx::{PgPool, Postgres, Transaction};
 use tracing::info;
 
-use crate::user::{
-    self,
-    model::{self, SysUser, SysUserDTO, SysUserVO},
-};
+use crate::user::model::{self, SysUser, SysUserDTO, SysUserVO, UpdateUserDTO};
 
 pub async fn select_user_by_username(db: &PgPool, user_name: &str) -> AppResult<Option<SysUser>> {
     info!(
@@ -31,14 +28,7 @@ pub async fn select_user_by_username(db: &PgPool, user_name: &str) -> AppResult<
 pub async fn add_user(db: &PgPool, sys_user_dto: SysUserDTO) -> AppResult<u64, AppError> {
     info!("[SERVICE] Entering add_user with vo: {:?}", sys_user_dto);
     let mut tx = db.begin().await?;
-    let password_hash = Argon2::default()
-        .hash_password(
-            sys_user_dto.password.as_bytes(),
-            &SaltString::generate(&mut OsRng),
-        )
-        .map_err(|e| AppError::Other(e.to_string()))?
-        .to_string();
-
+    let password_hash = hash_password(&sys_user_dto.password)?;
     // 1. 插入用户基本信息
     let result= sqlx::query!(
         "INSERT INTO sys_user (user_name, nick_name, password, phone_number, email,  status, remark, create_by, create_time) VALUES ($1, $2, $3, $4, $5, $6, $7, 'admin', NOW()) RETURNING user_id",
@@ -70,6 +60,7 @@ pub async fn add_user(db: &PgPool, sys_user_dto: SysUserDTO) -> AppResult<u64, A
     Ok(1)
 }
 
+/// 插入用户和角色的关联信息
 pub async fn insert_user_role(
     tx: &mut Transaction<'_, Postgres>,
     user_id: i32,
@@ -127,7 +118,7 @@ pub(crate) async fn select_user_page(
     let mut sql_builder = SqlBuilder::for_pagination(db, "*", "sys_user", Some("del_flag = '0' "));
     sql_builder
         .where_like("user_name", page_query.user_name.as_deref())
-        .where_like("phone_number", page_query.phonenumber.as_deref())
+        .where_like("phone_number", page_query.phone_number.as_deref())
         .where_eq("status", page_query.status)
         .where_le("create_time", page_query.begin_time)
         .where_ge("create_time", page_query.end_time)
@@ -137,6 +128,130 @@ pub(crate) async fn select_user_page(
     let users = users.into_iter().map(|u| u.into()).collect();
 
     Ok(PageReponse::new(users, page, page_size, count))
+}
+
+/// 修改用户状态
+pub async fn change_user_status(
+    db: &PgPool,
+    user_id: i32,
+    status: &str,
+) -> AppResult<u64, AppError> {
+    info!(
+        "[SERVICE] Changing status for user_id: {} to status: {}",
+        user_id, status
+    );
+    let resutl = sqlx::query!(
+            "UPDATE sys_user SET status = $1, update_by = 'admin', update_time = NOW() WHERE user_id = $2",
+            status,
+            user_id
+        ).execute(db).await?;
+    info!(
+        "[SERVICE] Updated status for user_id: {}. Rows affected: {}",
+        user_id,
+        resutl.rows_affected()
+    );
+    Ok(resutl.rows_affected())
+}
+
+/// 重置用户密码
+pub async fn reset_user_password(
+    db: &PgPool,
+    user_id: i32,
+    new_password: &str,
+) -> AppResult<u64, AppError> {
+    info!("[SERVICE] Resetting password for user_id: {}", user_id);
+    let password_hash = hash_password(new_password)?;
+    let result = sqlx::query!(
+        "UPDATE sys_user SET password = $1, update_by = 'admin', update_time = NOW() WHERE user_id = $2",
+        password_hash,
+        user_id
+    )
+    .execute(db)
+    .await?;
+    info!(
+        "[SERVICE] Password reset for user_id: {}. Rows affected: {}",
+        user_id,
+        result.rows_affected()
+    );
+    Ok(result.rows_affected())
+}
+
+/// 使用 Argon2 算法对密码进行哈希处理
+fn hash_password(password: &str) -> Result<String, AppError> {
+    Argon2::default()
+        .hash_password(password.as_bytes(), &SaltString::generate(&mut OsRng))
+        .map_err(|e| AppError::Other(e.to_string()))
+        .map(|hash| hash.to_string())
+}
+
+/// 根据用户ID获取其角色标识列表
+pub async fn get_user_roles(db: &PgPool, user_id: i32) -> AppResult<Vec<String>> {
+    info!(
+        "[HANDLER] Entering user::get_user_roles with user_id: {}",
+        user_id
+    );
+    let roles = if user_id == 1 {
+        // 如果是超级管理员
+        vec!["admin".to_string()]
+    } else {
+        sqlx::query_scalar(
+            "select sr.role_key from  sys_role  sr 
+             left join  sys_user_role sur  on sr.role_id = sur.role_id
+                   where  sr.status = '0' and sr.del_flag = '0' and sur.user_id = $1",
+        )
+        .bind(user_id)
+        .fetch_all(db)
+        .await?
+        // sqlx::query(sql).bind(user_id).fetch_all(db).await?
+    };
+    info!("[HANDLER] User roles for user_id {}: {:?}", user_id, roles);
+
+    Ok(roles)
+}
+
+pub async fn get_user_permissions(db: &PgPool, user_id: i32) -> AppResult<Vec<String>> {
+    info!(
+        "[HANDLER] Entering user::get_user_permissions with user_id: {}",
+        user_id
+    );
+    let permissions = if user_id == 1 {
+        // 如果是超级管理员
+        sqlx::query_scalar("select perm from sys_menu where status = '0' and del_flag = '0' and perms is not null and perms != ''")
+            .fetch_all(db)
+            .await?
+    } else {
+        let sql = r#"
+            select distinct sm.perms from sys_menu sm
+            left join sys_role_menu srm on sm.menu_id = srm.menu_id
+            left join sys_user_role sur on srm.role_id = sur.role_id
+            left join sys_role sr on sur.role_id = sr.role_id
+            where sr.status = '0' and sr.del_flag = '0' and sm.status = '0' and sm.del_flag = '0' and sur.user_id = $1 and sm.perms is not null and sm.perms  != ''
+        "#;
+
+        sqlx::query_scalar(sql).bind(user_id).fetch_all(db).await?
+    };
+    info!(
+        "[HANDLER] User permissions for user_id {}: {:?}",
+        user_id, permissions
+    );
+
+    Ok(permissions)
+}
+
+///删除用户（逻辑删除）
+pub(crate) async fn delete(db: &PgPool, user_id: i32) -> AppResult<u64> {
+    info!("[SERVICE] Deleting user with user_id: {}", user_id);
+    sqlx::query!("UPDATE sys_user SET del_flag = '1', update_by = 'admin', update_time = NOW() WHERE user_id = $1", user_id)
+        .execute(db)
+        .await
+        .map(|res| {
+            info!(
+                "[SERVICE] User with user_id: {} marked as deleted. Rows affected: {}",
+                user_id,
+                res.rows_affected()
+            );
+            res.rows_affected()
+        }).map_err(AppError::from)
 }
 
 /// 测试用例
@@ -166,4 +281,48 @@ mod user_test {
 
         Ok(())
     }
+}
+
+/// 修改用户信息
+pub(crate) async fn update_user(db: &PgPool, user: UpdateUserDTO) -> AppResult<u64> {
+    info!("[SERVICE] Updating user with data: {:?}", user);
+    let mut tx = db.begin().await?;
+    //修改用户信息
+    let resutl = sqlx::query!("update sys_user set nick_name = $1, phone_number = $2, email = $3, status = $4, remark = $5, update_by = 'admin', update_time = NOW() where user_id = $6",
+            user.nick_name,
+            user.phone_number,
+            user.email,
+            user.status,
+            user.remark,
+            user.user_id
+         ).execute(&mut *tx).await?;
+    //修改角色信息
+    if let Some(role_ids) = user.role_ids
+        && !role_ids.is_empty()
+    {
+        sqlx::query!("delete from sys_user_role where user_id = $1", user.user_id)
+            .execute(&mut *tx)
+            .await?;
+        insert_user_role(&mut tx, user.user_id, &role_ids).await?;
+    }
+    tx.commit().await?;
+
+    Ok(resutl.rows_affected())
+}
+
+pub(crate) async fn update_user_roles(
+    db: &PgPool,
+    user_id: i32,
+    role_ids: &[i32],
+) -> AppResult<()> {
+    info!(
+        "[SERVICE] Updating roles for user_id: {} with roles: {:?}",
+        user_id, role_ids
+    );
+    let mut tx = db.begin().await?;
+    sqlx::query!("delete from sys_user_role where user_id = $1", user_id)
+        .execute(&mut *tx)
+        .await?;
+    insert_user_role(&mut tx, user_id, role_ids).await?;
+    tx.commit().await.map_err(AppError::from)
 }

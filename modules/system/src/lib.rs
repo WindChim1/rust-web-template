@@ -4,6 +4,7 @@ use salvo::Router;
 use crate::handle::{get_captcha_image, login, refresh_token_handler};
 
 pub mod dict;
+pub mod file;
 pub mod handle;
 pub mod menu;
 pub mod model;

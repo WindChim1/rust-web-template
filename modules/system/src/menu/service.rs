@@ -14,14 +14,15 @@ pub async fn add_menu(db: &PgPool, menu: MenuDTO) -> AppResult<u8> {
         path,
         menu_type,
         status,
+        perms: perm,
         icon,
         remark,
         ..
     } = menu;
     let result = sqlx::query!(
             r#"
-                INSERT INTO sys_menu (menu_name, parent_id, order_num, path, menu_type,  status,  icon, remark, create_by, create_time)
-                VALUES ($1, $2, $3,$4, $5, $6, $7, $8, 'admin', NOW())
+                INSERT INTO sys_menu (menu_name, parent_id, order_num, path, menu_type,  status,perms,  icon, remark, create_by, create_time)
+                VALUES ($1, $2, $3,$4, $5, $6, $7, $8, $9,'admin', NOW())
 
         "#,
             menu_name,
@@ -30,6 +31,7 @@ pub async fn add_menu(db: &PgPool, menu: MenuDTO) -> AppResult<u8> {
             path,
             menu_type,
             status,
+            perm,
             icon,
             remark
         ).execute(db)
@@ -42,11 +44,11 @@ pub async fn update_menu(db: &PgPool, menu: MenuDTO) -> AppResult<u64> {
     let result = sqlx::query!(
         r#"
             UPDATE sys_menu
-            SET menu_name = $1, parent_id = $2, order_num = $3, path = $4, component = $5,  menu_type = $6,  status = $7,  icon = $8, remark = $9, update_by = 'admin', update_time = NOW()
-            WHERE menu_id = $10
+            SET menu_name = $1, parent_id = $2, order_num = $3, path = $4, component = $5,  menu_type = $6,  status = $7,  perms = $8, icon = $9, remark = $10, update_by = 'admin', update_time = NOW()
+            WHERE menu_id = $11
         "#,
         menu.menu_name, menu.parent_id, menu.order_num, menu.path, menu.component,
-        menu.menu_type,  menu.status,  menu.icon, menu.remark, menu.menu_id
+        menu.menu_type,  menu.status,menu.perms,  menu.icon, menu.remark, menu.menu_id
     )
         .execute(db)
         .await?;
