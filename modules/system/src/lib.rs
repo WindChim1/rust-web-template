@@ -22,7 +22,9 @@ pub fn init_router() -> Router {
                 //登录
                 .push(Router::with_path("login").post(login))
                 //刷新token
-                .push(Router::with_path("refresh_token").post(refresh_token_handler)),
+                .push(Router::with_path("refresh_token").post(refresh_token_handler))
+                //文件上传
+                .push(file::init_router()),
         )
         .push(
             Router::new()

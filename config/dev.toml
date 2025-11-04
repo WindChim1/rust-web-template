@@ -2,13 +2,13 @@
 port = 8081
 
 [database]
-type="postgres"
-host="172.16.100.200"
-database="project"
-schema ="sky_website"
-port=25432
-username= "postgres"
-password= "Sky@2024"
+type = "postgres"
+host = "172.16.100.200"
+database = "project"
+schema = "sky_website"
+port = 25432
+username = "postgres"
+password = "Sky@2024"
 
 
 [jwt]
@@ -20,3 +20,15 @@ issuer = "rust-web-template"
 acc_expiration_hour = 30
 # JWT token刷新时间，单位：分钟
 ref_expiration_hour = 60
+
+
+[upload]
+path = "upload/"
+allowed_types = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "video/mp4",
+  "appication/pdf",
+]
+max_size = { image = 5242880, appication = 10485760, video = 52428800 }

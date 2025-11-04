@@ -1,6 +1,7 @@
 use common::AppResult;
 use framework::{config, db::DBPool, jwt::JWTTool, log};
 use salvo::prelude::*;
+use system::file::UploadTool;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
@@ -14,6 +15,7 @@ async fn run() -> AppResult<()> {
     let setting = config::Setting::init()?;
     // Initialize jwt auth util
     JWTTool::init((&setting.jwt).into());
+    UploadTool::init(setting.upload);
     // Initialize jwt auth util
     DBPool::inint(&setting.database.get_url()).await?;
 

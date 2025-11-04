@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use common::AppError;
 use config::{Config, Environment, File};
 use serde::Deserialize;
@@ -46,7 +48,16 @@ pub struct Setting {
     pub server: Server,
     pub database: Database,
     pub jwt: JWT,
+    pub upload: Upload,
 }
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Upload {
+    pub max_size: HashMap<String, usize>,
+    pub allowed_types: Vec<String>,
+    pub path: String,
+}
+
 impl Setting {
     pub fn init() -> Result<Self, AppError> {
         let setting = Config::builder()
