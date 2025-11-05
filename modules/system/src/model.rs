@@ -2,6 +2,7 @@ use std::{sync::OnceLock, time::Duration};
 
 use common::{AppError, AppResult};
 use moka::future::Cache;
+use salvo::oapi::ToSchema;
 use serde::{Deserialize, Serialize};
 use user_agent_parser::UserAgentParser;
 

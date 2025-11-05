@@ -33,14 +33,6 @@ pub async fn upload(req: &mut Request, res: &mut Response) {
     let ul = UploadTool::get()
         .map_err(|e| res.render(Text::Plain(e.to_string())))
         .unwrap();
-    // let _ = req.form_data().await.map(|data| {
-    //     data.files.iter().for_each(|(_, file_part)| {
-    //         let _ = check(file_part, ul).map_err(|e| {
-    //             println!("e:{}", e);
-    //             res.render(Json(ResponseResult::error(400, e.to_string().as_str())));
-    //         });
-    //     });
-    // });
     match req.form_data().await {
         Ok(data) => {
             // 处理文件

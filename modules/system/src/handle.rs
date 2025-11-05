@@ -6,6 +6,7 @@ use framework::db::DBPool;
 use framework::jwt::{JWTTool, TokenType};
 use monitor::login_info;
 use salvo::Request;
+use salvo::oapi::endpoint;
 use salvo::oapi::extract::{JsonBody, QueryParam};
 use salvo::{Writer, handler};
 use serde_json::Value;
@@ -19,7 +20,7 @@ use crate::model::{CapCache, CaptchaDTO, CaptchaVO, LoginDTO, PASER, TokenVO};
 use crate::user::service;
 
 /// 处理获取验证码图片
-#[handler]
+#[endpoint]
 pub async fn get_captcha_image() -> AppResult<ResponseResult<CaptchaVO>> {
     info!("[HANDLER] Entering get  captcha image");
     // 生成 4 位验证码

@@ -1,4 +1,9 @@
-use salvo::{Depot, Request, Response, Writer, async_trait, http::StatusCode, writing::Json};
+use salvo::{
+    Depot, Request, Response, Writer, async_trait,
+    http::StatusCode,
+    oapi::{Components, Content, EndpointOutRegister, Operation, ToResponses, ToSchema},
+    writing::Json,
+};
 use serde::Serialize;
 
 use crate::AppResult;
@@ -87,16 +92,35 @@ fn response_result_test() -> serde_json::Result<()> {
 #[async_trait]
 impl<T: Serialize + Send + Sync> Writer for ResponseResult<T> {
     async fn write(self, _req: &mut Request, _depot: &mut Depot, res: &mut Response)
-    where
-        'life0: 'async_trait,
-        'life1: 'async_trait,
-        'life2: 'async_trait,
-        Self: 'async_trait,
+    // where
+    //     'life0: 'async_trait,
+    //     'life1: 'async_trait,
+    //     'life2: 'async_trait,
+    //     Self: 'async_trait,
     {
         // 设置默认HTTP状态码（成功响应通常用200）
         res.status_code(StatusCode::OK);
         // 将ResponseResult序列化为JSON并写入响应
         res.render(Json(self));
+    }
+}
+
+// impl<T: Serialize + ToSchema> ToResponses for ResponseResult<T> {
+//     fn to_responses(components: &mut Components) -> salvo::oapi::Responses {
+//         salvo::oapi::Responses::new().response(
+//             "200",
+//             salvo::oapi::Response::new("Response json format data")
+//                 .add_content("application/json", Content::new(T::to_schema(components))),
+//         )
+//     }
+// }
+
+impl<T: Serialize + ToSchema> EndpointOutRegister for ResponseResult<T> {
+    fn register(components: &mut Components, operation: &mut Operation) {
+        // let t_schema = <T as ToSchema>::to_schema(components);
+        // operation
+        //     .responses
+        //     .insert("200".to_string(), salvo::writing::Json(t_schema));
     }
 }
 

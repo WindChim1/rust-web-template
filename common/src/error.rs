@@ -1,6 +1,9 @@
 use std::fmt::Debug;
 
-use salvo::{Depot, Request, Response, Writer, async_trait, http::StatusCode, writing::Json};
+use salvo::{
+    Depot, Request, Response, Writer, async_trait, http::StatusCode, oapi::EndpointOutRegister,
+    writing::Json,
+};
 use thiserror::Error;
 use tracing::error;
 
@@ -100,6 +103,24 @@ impl Writer for AppError {
         res.status_code(http_status);
         res.render(Json(reponse_result));
     }
+}
+
+// 为 AppError 实现 EndpointOutRegister
+impl EndpointOutRegister for AppError {
+    fn register(components: &mut salvo::oapi::Components, operation: &mut salvo::oapi::Operation) {
+        todo!()
+    }
+    // fn register(registry: &mut EndpointOutRegistry) {
+    //     // 注册错误处理逻辑：将 AppError 转换为 HTTP 响应
+    //     registry.register::<Self, _>(|err: Self, _req: &Request, res: &mut Response| {
+    //         // 示例：根据错误内容设置响应状态码和 body
+    //         res.status_code(StatusCode::BAD_REQUEST); // 可根据实际错误类型动态调整
+    //         res.render(Json(ResponseResult::error(
+    //             400,                      // 错误码
+    //             err.to_string().as_str(), // 错误信息
+    //         )));
+    //     });
+    // }
 }
 
 #[cfg(test)]

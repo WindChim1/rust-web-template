@@ -34,4 +34,4 @@ sqlx = { version = "0.8.6", features = [
 moka = { version = "0.12.10", features = ["future"] }
 anyhow = "1.0.99"
 uuid = "1.18.1"
-async-trait = "0.1.89"
+async-trait = { version = "0.1.89", features = [] }
