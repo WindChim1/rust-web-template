@@ -1,209 +1,231 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Salvo Backend Framework - 高性能 Rust 后端脚手架</title>
-    <!-- 引入 Tailwind CSS -->
+    <title>Ruts Web Template - 模块化 Rust 后端架构</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 PrismJS 代码高亮样式 -->
+    <!-- PrismJS for Syntax Highlighting -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .feature-card { transition: all 0.3s ease; }
-        .feature-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        /* 自定义滚动条样式 */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+        .code-font { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+        /* 优化代码块样式 */
+        pre[class*="language-"] { border-radius: 0.5rem; margin: 0.5em 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        /* 卡片悬停特效 */
+        .hover-card { transition: all 0.3s ease; }
+        .hover-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
+<body class="bg-slate-50 text-slate-800 antialiased">
 
     <!-- 顶部导航 -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center text-white font-bold">S</div>
-                <span class="text-xl font-bold text-slate-800">Salvo Backend</span>
+    <nav class="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white font-bold text-lg">S</div>
+                <span class="font-bold text-xl tracking-tight text-slate-800">Sky Backend</span>
             </div>
-            <nav class="hidden md:flex space-x-6 text-sm font-medium text-slate-600">
-                <a href="#features" class="hover:text-orange-600 transition">核心特性</a>
-                <a href="#architecture" class="hover:text-orange-600 transition">架构设计</a>
-                <a href="#quickstart" class="hover:text-orange-600 transition">快速开始</a>
-                <a href="#deployment" class="hover:text-orange-600 transition">部署运维</a>
-            </nav>
+            <div class="hidden md:flex gap-8 text-sm font-semibold text-slate-600">
+                <a href="#features" class="hover:text-blue-600 transition">特性</a>
+                <a href="#architecture" class="hover:text-blue-600 transition">架构</a>
+                <a href="#setup" class="hover:text-blue-600 transition">环境</a>
+                <a href="#quickstart" class="hover:text-blue-600 transition">开发</a>
+                <a href="#deployment" class="hover:text-blue-600 transition">部署</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section (深色背景回归) -->
+    <header class="bg-slate-900 text-white pt-24 pb-32 relative overflow-hidden">
+        <!-- 背景装饰 -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
+            <div class="absolute -top-24 -left-24 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+            <div class="absolute top-32 right-0 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse" style="animation-delay: 2s"></div>
+        </div>
+
+        <div class="max-w-4xl mx-auto px-6 text-center relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-blue-400 text-xs font-bold mb-8 uppercase tracking-wide">
+                <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                Enterprise Rust Template
+            </div>
+            <h1 class="text-5xl md:text-7xl font-extrabold mb-8 leading-tight">
+                构建下一代<br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">高性能 Web 服务</span>
+            </h1>
+            <p class="text-lg md:text-xl text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+                基于 <strong>Salvo</strong> + <strong>SQLx</strong> + <strong>Tokio</strong>。
+                采用 Workspace 模式，集成 RBAC、审计日志与 Docker 方案，为企业级开发而生。
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="#setup" class="px-8 py-4 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-500 transition shadow-lg shadow-blue-900/50 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-terminal"></i> 开始安装
+                </a>
+                <a href="#architecture" class="px-8 py-4 rounded-lg bg-slate-800 text-slate-200 font-bold border border-slate-700 hover:bg-slate-700 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-sitemap"></i> 查看架构
+                </a>
+            </div>
         </div>
     </header>
 
-    <!-- Hero 区域 -->
-    <section class="bg-slate-900 text-white py-20">
-        <div class="max-w-6xl mx-auto px-4 text-center">
-            <span class="inline-block py-1 px-3 rounded-full bg-orange-500/20 text-orange-300 text-xs font-semibold mb-4 border border-orange-500/30">Rust Workspace · 模块化架构</span>
-            <h1 class="text-4xl md:text-6xl font-bold mb-6 leading-tight">构建下一代<br/><span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">高性能 Web 服务</span></h1>
-            <p class="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto mb-10">
-                基于 Salvo + SQLx + Tokio 打造的企业级后端脚手架。
-                采用 Workspace 模式分离核心框架与业务模块，集成 RBAC、审计日志与 Docker 部署方案。
-            </p>
-            <div class="flex justify-center space-x-4">
-                <a href="#quickstart" class="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-lg font-medium transition duration-300 shadow-lg shadow-orange-600/30">
-                    立即开始
-                </a>
-                <a href="https://github.com/salvo-rs/salvo" target="_blank" class="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-lg font-medium transition duration-300 border border-slate-600">
-                    了解 Salvo
-                </a>
+    <!-- 特性卡片 -->
+    <section id="features" class="py-20 -mt-16 relative z-20 px-6">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-100 hover-card">
+                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mb-4 text-2xl"><i class="fa-solid fa-bolt"></i></div>
+                <h3 class="text-xl font-bold mb-2">Salvo & Tokio</h3>
+                <p class="text-slate-500 text-sm">基于 Rust 异步生态，提供极高的并发处理能力，内存安全且高效。</p>
+            </div>
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-100 hover-card">
+                <div class="w-12 h-12 bg-green-50 text-green-600 rounded-lg flex items-center justify-center mb-4 text-2xl"><i class="fa-solid fa-database"></i></div>
+                <h3 class="text-xl font-bold mb-2">SQLx Postgres</h3>
+                <p class="text-slate-500 text-sm">纯异步数据库驱动，支持编译时 SQL 语法检查，杜绝运行时错误。</p>
+            </div>
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-100 hover-card">
+                <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center mb-4 text-2xl"><i class="fa-solid fa-shield-halved"></i></div>
+                <h3 class="text-xl font-bold mb-2">审计与权限</h3>
+                <p class="text-slate-500 text-sm">内置 AOP 操作日志记录与 RBAC 权限控制，满足企业合规需求。</p>
             </div>
         </div>
     </section>
 
-    <!-- 技术栈 & 特性 -->
-    <section id="features" class="py-20">
-        <div class="max-w-6xl mx-auto px-4">
-            <h2 class="text-3xl font-bold text-center mb-12 text-slate-800">核心技术栈与特性</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Card 1 -->
-                <div class="feature-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">Salvo & Tokio</h3>
-                    <p class="text-slate-600 text-sm">基于最新的 Salvo 框架，利用 Rust 强大的异步运行时 Tokio，提供极高的并发处理能力和内存安全性。</p>
+    <!-- 架构设计 (Workspace) -->
+    <section id="architecture" class="py-20 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row gap-16">
+            <div class="lg:w-5/12">
+                <h2 class="text-3xl font-bold mb-6 text-slate-900">Workspace 模块化架构</h2>
+                <p class="text-slate-600 mb-8">
+                    项目采用 Rust Workspace 模式，将核心框架与业务逻辑物理隔离，依赖清晰，编译速度更快。
+                </p>
+                <!-- File Tree -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm code-font text-sm leading-8">
+                    <div class="text-slate-400 mb-2 select-none">// Project Structure</div>
+                    <ul class="ml-2">
+                        <li class="flex items-center gap-2"><i class="fa-regular fa-folder-open text-yellow-500"></i> <span class="font-bold text-slate-700">app</span> <span class="text-xs text-slate-400 ml-auto">启动入口</span></li>
+                        <li class="flex items-center gap-2"><i class="fa-regular fa-folder text-green-500"></i> <span class="font-bold text-slate-700">common</span> <span class="text-xs text-slate-400 ml-auto">公共工具</span></li>
+                        <li class="flex items-center gap-2"><i class="fa-regular fa-folder text-purple-500"></i> <span class="font-bold text-slate-700">config</span> <span class="text-xs text-slate-400 ml-auto">环境配置</span></li>
+                        <li class="ml-6 text-slate-500 border-l pl-3 border-slate-200">📄 dev.toml / release.toml</li>
+                        
+                        <li class="flex items-center gap-2 mt-2"><i class="fa-regular fa-folder-open text-blue-500"></i> <span class="font-bold text-slate-700">framework</span> <span class="text-xs text-blue-600 bg-blue-50 px-2 rounded-full ml-auto">基座</span></li>
+                        <li class="ml-6 text-slate-600 border-l pl-3 border-slate-200">🦀 db.rs <span class="text-xs text-slate-400">(SQLx Pool)</span></li>
+                        <li class="ml-6 text-slate-600 border-l pl-3 border-slate-200">🦀 jwt.rs <span class="text-xs text-slate-400">(Auth)</span></li>
+                        <li class="ml-6 text-slate-600 border-l pl-3 border-slate-200">🦀 log.rs <span class="text-xs text-slate-400">(Middleware)</span></li>
+
+                        <li class="flex items-center gap-2 mt-2"><i class="fa-regular fa-folder-open text-orange-500"></i> <span class="font-bold text-slate-700">modules</span> <span class="text-xs text-orange-600 bg-orange-50 px-2 rounded-full ml-auto">业务</span></li>
+                        <li class="ml-6 border-l pl-3 border-slate-200">
+                            <span class="text-slate-700 font-semibold"><i class="fa-regular fa-folder text-orange-300 mr-1"></i> monitor</span>
+                            <span class="text-xs text-slate-400 ml-2">login_info, operlog</span>
+                        </li>
+                        <li class="ml-6 border-l pl-3 border-slate-200">
+                            <span class="text-slate-700 font-semibold"><i class="fa-regular fa-folder text-orange-300 mr-1"></i> system</span>
+                            <span class="text-xs text-slate-400 ml-2">user, role, menu, dict</span>
+                        </li>
+                    </ul>
                 </div>
-                <!-- Card 2 -->
-                <div class="feature-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div class="w-12 h-12 bg-green-100 text-green-600 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">SQLx & Postgres</h3>
-                    <p class="text-slate-600 text-sm">纯 Rust 编写的异步 SQL 库，支持编译时 SQL 检查。内置 Postgres 连接池管理，安全且高效。</p>
+            </div>
+            
+            <div class="lg:w-7/12 grid grid-cols-1 md:grid-cols-2 gap-6 content-center">
+                <div class="p-6 bg-white rounded-xl shadow-sm border-l-4 border-blue-500">
+                    <h4 class="font-bold text-lg mb-2">Framework 层</h4>
+                    <p class="text-sm text-slate-600">基础设施底座。封装了数据库连接池、JWT 认证、全局日志、统一错误处理。它作为依赖被业务模块引用。</p>
                 </div>
-                <!-- Card 3 -->
-                <div class="feature-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">AOP 操作日志</h3>
-                    <p class="text-slate-600 text-sm">基于 Salvo Middleware 实现的无侵入式日志系统。自动捕获请求参数、响应结果、耗时及操作人信息并入库。</p>
+                <div class="p-6 bg-white rounded-xl shadow-sm border-l-4 border-orange-500">
+                    <h4 class="font-bold text-lg mb-2">Modules 层</h4>
+                    <p class="text-sm text-slate-600">业务领域层。按 DDD 思想拆分为独立的 Crate（如 system, monitor）。每个模块包含独立的 Handler、Service 和 Model。</p>
                 </div>
-                <!-- Card 4 -->
-                <div class="feature-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">多环境配置</h3>
-                    <p class="text-slate-600 text-sm">支持 <code>dev.toml</code>, <code>release.toml</code> 等多配置文件，通过环境变量动态切换，完美适配 Docker 部署。</p>
+                <div class="p-6 bg-white rounded-xl shadow-sm border-l-4 border-purple-500">
+                    <h4 class="font-bold text-lg mb-2">App 层</h4>
+                    <p class="text-sm text-slate-600">组装层与入口。负责读取 Config 配置，初始化 Framework，挂载 Modules 的路由，最终启动 Web Server。</p>
                 </div>
-                <!-- Card 5 -->
-                <div class="feature-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div class="w-12 h-12 bg-red-100 text-red-600 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">Workspace 架构</h3>
-                    <p class="text-slate-600 text-sm">采用 Rust Workspace 管理多包项目，将 Framework 与 Modules 物理隔离，依赖清晰，编译更快。</p>
-                </div>
-                <!-- Card 6 -->
-                <div class="feature-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div class="w-12 h-12 bg-cyan-100 text-cyan-600 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">Docker 友好</h3>
-                    <p class="text-slate-600 text-sm">提供优化的 Dockerfile，支持交叉编译 (Cross)，支持挂载配置文件和可执行文件，实现秒级热更新。</p>
+                <div class="p-6 bg-white rounded-xl shadow-sm border-l-4 border-green-500">
+                    <h4 class="font-bold text-lg mb-2">Config 层</h4>
+                    <p class="text-sm text-slate-600">支持多环境配置（dev/test/release）。配合 `RUN_MODE` 环境变量，实现 Docker 环境下的配置无缝切换。</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 项目结构 (已更新) -->
-    <section id="architecture" class="bg-slate-100 py-20">
-        <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row gap-12">
-            <div class="md:w-1/2">
-                <h2 class="text-3xl font-bold mb-6 text-slate-800">模块化项目结构</h2>
-                <p class="text-slate-600 mb-6">采用 Rust Workspace 模式，实现“核心框架”与“业务模块”的物理分离。</p>
-                <div class="bg-white p-6 rounded-lg shadow-inner border border-slate-300 overflow-x-auto">
-<ul class="space-y-2 font-mono text-sm text-slate-600 leading-snug">
-    <li>
-        <span class="text-orange-600 font-bold">app/</span> 
-        <span class="text-slate-400 ml-2">// 启动入口 (main.rs, lib.rs)</span>
-    </li>
-    <li>
-        <span class="text-orange-600 font-bold">common/</span>
-        <span class="text-slate-400 ml-2">// 公共工具库</span>
-    </li>
-    <li>
-        <span class="text-orange-600 font-bold">config/</span>
-        <span class="text-slate-400 ml-2">// 环境配置</span>
-        <ul class="ml-6 mt-1 text-slate-500 border-l border-slate-200 pl-3 space-y-1">
-            <li>dev.toml <span class="text-xs text-slate-400">(开发环境)</span></li>
-            <li>release.toml <span class="text-xs text-slate-400">(生产环境)</span></li>
-            <li>test.toml</li>
-        </ul>
-    </li>
-    <li>
-        <span class="text-orange-600 font-bold">framework/</span>
-        <span class="text-slate-400 ml-2">// 基础设施底座</span>
-        <ul class="ml-6 mt-1 text-slate-500 border-l border-slate-200 pl-3 space-y-1">
-            <li>config.rs <span class="text-xs text-slate-400">(配置加载)</span></li>
-            <li>db.rs <span class="text-xs text-slate-400">(SQLx 连接池)</span></li>
-            <li>jwt.rs <span class="text-xs text-slate-400">(Token 认证)</span></li>
-            <li>log.rs <span class="text-xs text-slate-400">(日志封装)</span></li>
-            <li>middleware.rs <span class="text-xs text-slate-400">(全局中间件)</span></li>
-        </ul>
-    </li>
-    <li>
-        <span class="text-orange-600 font-bold">modules/</span>
-        <span class="text-slate-400 ml-2">// 业务领域层</span>
-        <ul class="ml-6 mt-1 border-l border-slate-200 pl-3 space-y-2">
-            <li>
-                <span class="text-blue-600 font-semibold">monitor/</span>
-                <span class="text-xs text-slate-400 ml-2">// 系统监控</span>
-                <div class="ml-4 text-xs text-slate-500">login_info, operlog</div>
-            </li>
-            <li>
-                <span class="text-blue-600 font-semibold">system/</span>
-                <span class="text-xs text-slate-400 ml-2">// 系统管理</span>
-                <div class="ml-4 text-xs text-slate-500">user, role, menu, dict, file</div>
-            </li>
-        </ul>
-    </li>
-</ul>
-                </div>
+    <!-- 环境准备 (新功能) -->
+    <section id="setup" class="py-20 bg-white border-t border-slate-200">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <span class="text-blue-600 font-bold tracking-wider uppercase text-sm">Environment</span>
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mt-2">开发环境准备</h2>
+                <p class="text-slate-500 mt-4 max-w-2xl mx-auto">为了保证最佳的开发体验和代码质量，请按顺序安装以下 Rust 生态工具。</p>
             </div>
-            <div class="md:w-1/2">
-                <h2 class="text-3xl font-bold mb-6 text-slate-800">分层设计理念</h2>
+
+            <!-- 工具网格 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <!-- 基础工具 -->
                 <div class="space-y-6">
-                    <div class="flex items-start">
-                        <div class="bg-blue-600 text-white rounded-lg w-10 h-10 flex items-center justify-center shrink-0 mt-1 shadow-md">
-                            1
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2 border-b pb-2"><i class="fa-solid fa-hammer"></i> 核心工具</h3>
+                    
+                    <div class="group">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-semibold text-slate-800">1. 安装 Rust</span>
+                            <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Compiler</span>
                         </div>
-                        <div class="ml-4">
-                            <h4 class="font-bold text-lg text-slate-800">Framework (核心层)</h4>
-                            <p class="text-slate-600 text-sm mt-1">
-                                位于 <code>framework</code> 目录。封装了与业务无关的基础能力，如 DB 连接、鉴权、日志、配置解析。它作为 crate 被其他模块引用。
-                            </p>
+                        <pre><code class="language-bash">curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh</code></pre>
+                    </div>
+
+                    <div class="group">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-semibold text-slate-800">2. 安装 Cargo Generate</span>
+                            <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Scaffolding</span>
+                        </div>
+                        <pre><code class="language-bash">cargo install cargo-generate</code></pre>
+                        <p class="text-xs text-slate-500 mt-1">用于从模板快速初始化项目结构。</p>
+                    </div>
+
+                    <div class="group">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-semibold text-slate-800">3. 安装 SQLx CLI</span>
+                            <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Database</span>
+                        </div>
+                        <pre><code class="language-bash">cargo install sqlx-cli</code></pre>
+                        <p class="text-xs text-slate-500 mt-1">用于数据库迁移 (Migrate) 和离线 SQL 检查。</p>
+                    </div>
+                </div>
+
+                <!-- 质量工具 -->
+                <div class="space-y-6">
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2 border-b pb-2"><i class="fa-solid fa-check-double"></i> 代码质量 & 测试</h3>
+                    
+                    <div class="group">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-semibold text-slate-800">4. 代码检查工具集</span>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 text-sm">
+                            <div class="mb-3">
+                                <span class="font-bold text-purple-600">Pre-commit</span> (提交前检查):
+                                <pre class="my-1"><code class="language-bash">pipx install pre-commit && pre-commit install</code></pre>
+                            </div>
+                            <div class="mb-3">
+                                <span class="font-bold text-blue-600">Cargo Deny</span> (依赖安全):
+                                <pre class="my-1"><code class="language-bash">cargo install --locked cargo-deny</code></pre>
+                            </div>
+                            <div class="mb-3">
+                                <span class="font-bold text-orange-600">Typos</span> (拼写检查):
+                                <pre class="my-1"><code class="language-bash">cargo install typos-cli</code></pre>
+                            </div>
+                            <div>
+                                <span class="font-bold text-green-600">Git Cliff</span> (更新日志):
+                                <pre class="my-1"><code class="language-bash">cargo install git-cliff</code></pre>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex items-start">
-                        <div class="bg-orange-600 text-white rounded-lg w-10 h-10 flex items-center justify-center shrink-0 mt-1 shadow-md">
-                            2
+
+                    <div class="group">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-semibold text-slate-800">5. Cargo Nextest</span>
+                            <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Testing</span>
                         </div>
-                        <div class="ml-4">
-                            <h4 class="font-bold text-lg text-slate-800">Modules (业务层)</h4>
-                            <p class="text-slate-600 text-sm mt-1">
-                                位于 <code>modules</code> 目录。按领域驱动设计 (DDD) 拆分为 <code>system</code> (用户权限) 和 <code>monitor</code> (监控审计) 等独立 crate。每个模块包含自己的 handler、service 和 model。
-                            </p>
-                        </div>
-                    </div>
-                    <div class="flex items-start">
-                        <div class="bg-slate-700 text-white rounded-lg w-10 h-10 flex items-center justify-center shrink-0 mt-1 shadow-md">
-                            3
-                        </div>
-                        <div class="ml-4">
-                            <h4 class="font-bold text-lg text-slate-800">App (组装层)</h4>
-                            <p class="text-slate-600 text-sm mt-1">
-                                位于 <code>app</code> 目录。作为二进制入口，负责读取配置、初始化 Framework、挂载各个 Module 的路由，最终启动 Salvo Server。
-                            </p>
-                        </div>
+                        <pre><code class="language-bash">cargo install cargo-nextest --locked</code></pre>
+                        <p class="text-xs text-slate-500 mt-1">比原生 `cargo test` 更快、更友好的测试运行器。</p>
                     </div>
                 </div>
             </div>
@@ -211,77 +233,106 @@
     </section>
 
     <!-- 快速开始 -->
-    <section id="quickstart" class="py-20">
-        <div class="max-w-6xl mx-auto px-4">
-            <h2 class="text-3xl font-bold mb-8 text-slate-800">快速开始</h2>
+    <section id="quickstart" class="py-20 bg-slate-50">
+        <div class="max-w-5xl mx-auto px-6">
+            <h2 class="text-3xl font-bold mb-10 text-center text-slate-900">🚀 快速开始</h2>
             
-            <div class="mb-8">
-                <h3 class="text-xl font-semibold mb-3">1. 克隆模板与配置</h3>
-                <pre><code class="language-bash">cargo generate WindChim1/rust-web-template
+            <div class="space-y-8">
+                <!-- Step 1 -->
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">1</div>
+                    <div class="flex-grow">
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">生成项目</h3>
+                        <pre><code class="language-bash">cargo generate WindChim1/rust-web-template
+cd rust-web-template</code></pre>
+                    </div>
+                </div>
 
-cd {project_name}
-# 复制配置文件
-cp config/dev.toml.example config/dev.toml</code></pre>
-            </div>
-
-            <div class="mb-8">
-                <h3 class="text-xl font-semibold mb-3">2. 运行开发环境</h3>
-                <pre><code class="language-bash"># 确保本地已启动 PostgreSQL
-# 在 Workspace 根目录运行
+                <!-- Step 2 -->
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold">2</div>
+                    <div class="flex-grow">
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">配置运行</h3>
+                        <p class="text-sm text-slate-600 mb-2">复制配置文件，并修改其中的数据库连接信息。</p>
+                        <pre><code class="language-bash">cp config/dev.toml.example config/dev.toml
+# 运行 app 模块 (Workspace 模式下需要指定 -p app)
 cargo run -p app</code></pre>
-            </div>
+                    </div>
+                </div>
 
-            <div class="mb-8">
-                <h3 class="text-xl font-semibold mb-3">3. 业务代码示例 (Handler)</h3>
-                <p class="text-slate-600 mb-2">编写业务接口极其简洁，无需关心日志细节：</p>
+                <!-- Step 3 -->
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">3</div>
+                    <div class="flex-grow">
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">编写业务接口</h3>
+                        <p class="text-sm text-slate-600 mb-2">示例：在 <code class="bg-gray-200 px-1 rounded text-xs">modules/system/src/user/handler.rs</code> 中编写接口。</p>
 <pre><code class="language-rust">#[handler]
-pub async fn add_article(req: &mut Request, depot: &mut Depot, res: &mut Response) -> AppResult<()> {
-    // 1. 获取 DB 链接
+pub async fn add_user(req: &mut Request, depot: &mut Depot, res: &mut Response) -> AppResult<()> {
     let pool = depot.obtain::<PgPool>().unwrap();
-    // 2. 解析参数
-    let dto = req.parse_json::<ArticleAddDTO>().await?;
-    // 3. 执行 Service
+    let dto = req.parse_json::<UserAddDTO>().await?;
+    
+    // 执行业务逻辑
     let id = service::add(pool, dto).await?;
 
-    // 4. 【关键】标记日志（一行代码实现审计）
-    LogMeta::set(depot, "用户管理", BusinessType::Add.get_value(), "添加用户");
+    // 一行代码记录操作日志
+    LogMeta::set(depot, "用户管理", 1, "新增用户");
 
-    ResponseResult::success_msg("添加成功").into()
-
+    res.render(Json(AppResponse::success(id)));
+    Ok(())
 }</code></pre>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- 部署运维 -->
-    <section id="deployment" class="bg-slate-900 text-white py-20">
-        <div class="max-w-6xl mx-auto px-4">
-            <h2 class="text-3xl font-bold mb-8 text-white">Docker 部署方案</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+    <!-- 部署运维 (恢复深色背景) -->
+    <section id="deployment" class="py-20 bg-slate-900 text-slate-300">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="text-3xl font-bold mb-12 text-white text-center">Docker 部署运维</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <!-- 方案介绍 -->
                 <div>
-                    <h3 class="text-xl font-semibold mb-4 text-orange-400">方案：挂载式更新 (推荐)</h3>
-                    <p class="text-slate-400 mb-4">使用基础运行时镜像，通过挂载宿主机可执行文件实现秒级更新，无需重复构建镜像。</p>
-                    <pre><code class="language-bash"># 启动容器
+                    <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <i class="fa-brands fa-docker text-blue-400"></i> 挂载式热更新方案
+                    </h3>
+                    <p class="mb-6 leading-relaxed">
+                        推荐使用 <strong>“基础运行时镜像 + 文件挂载”</strong> 的方式。
+                        将编译好的二进制文件从宿主机挂载到容器中，<span class="text-blue-400">无需每次更新代码都重新构建 Docker 镜像</span>，实现秒级发布。
+                    </p>
+                    <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                        <h4 class="font-bold text-white mb-2 text-sm">更新流程：</h4>
+                        <ol class="list-decimal list-inside space-y-2 text-sm">
+                            <li>本地交叉编译：<code>cross build --release</code></li>
+                            <li>暂停容器：<code>docker stop sky-server</code></li>
+                            <li>替换宿主机文件：覆盖 <code>app-linux</code></li>
+                            <li>启动容器：<code>docker start sky-server</code></li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- 命令行 -->
+                <div>
+                    <div class="flex justify-between items-end mb-2">
+                        <span class="font-bold text-white">启动命令</span>
+                        <span class="text-xs bg-slate-800 px-2 py-1 rounded text-slate-400">Linux / Docker</span>
+                    </div>
+                    <pre><code class="language-bash"># 启动容器 (生产环境)
 docker run -d \
-  --name app-server \
-  -p 8080:8080 \
+  --name sky-server \
+  -p 8081:8081 \
+  -e APP_PORT=8081 \
   -e RUN_MODE=release \
   -v $(pwd)/config:/app/config \
-  -v $(pwd)/logs:/app/logs \
   -v $(pwd)/uploads:/app/uploads \
+  -v $(pwd)/logs:/app/logs \
+  # 关键：挂载二进制文件
   -v $(pwd)/target/release/app-linux:/app/server \
   rust-runtime:v1</code></pre>
-                </div>
-                <div>
-                    <h3 class="text-xl font-semibold mb-4 text-orange-400">更新流程</h3>
-                    <ol class="list-decimal list-inside text-slate-400 space-y-2">
-                        <li>本地使用 <code>cross</code> 编译 Linux 二进制文件。</li>
-                        <li>停止容器：<code>docker stop app-server</code>。</li>
-                        <li>替换宿主机的 <code>app-linux</code> 文件。</li>
-                        <li>启动容器：<code>docker start app-server</code>。</li>
-                    </ol>
-                    <div class="mt-4 bg-slate-800 p-4 rounded border-l-4 border-orange-500">
-                        <p class="text-sm">⚠️ 注意：在 Windows 环境下开发，务必使用 <code>cross build --target x86_64-unknown-linux-gnu</code> 进行交叉编译。</p>
+                    <div class="mt-4 text-xs text-orange-400 flex items-start gap-2">
+                        <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                        <p>注意：在 Windows 环境下开发，必须使用 <code>cross build --target x86_64-unknown-linux-gnu</code> 编译出 Linux 格式的可执行文件。</p>
                     </div>
                 </div>
             </div>
@@ -289,20 +340,24 @@ docker run -d \
     </section>
 
     <!-- Footer -->
-    <footer class="bg-slate-950 text-slate-500 py-8 border-t border-slate-800">
-        <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+    <footer class="bg-slate-950 text-slate-500 py-12 border-t border-slate-900">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
             <div class="mb-4 md:mb-0">
-                <span class="font-bold text-slate-300">Salvo Backend Framework</span>
-                <span class="ml-2 text-sm">© 2025 Made with Rust</span>
+                <span class="font-bold text-slate-300 text-lg">Sky Backend</span>
+                <p class="text-xs mt-1">Enterprise Rust Web Template</p>
             </div>
-            <div class="flex space-x-6">
-                <a href="#" class="hover:text-white transition">文档</a>
-                <a href="#" class="hover:text-white transition">GitHub</a>
+            <div class="flex gap-8 text-sm">
+                <a href="#" class="hover:text-white transition"><i class="fa-brands fa-github"></i> GitHub</a>
+                <a href="#" class="hover:text-white transition"><i class="fa-solid fa-book"></i> Documentation</a>
+                <a href="#" class="hover:text-white transition"><i class="fa-solid fa-bug"></i> Report Issue</a>
             </div>
+        </div>
+        <div class="text-center text-xs mt-8 text-slate-700">
+            &copy; 2025 Made with ❤️ by Rustacean.
         </div>
     </footer>
 
-    <!-- PrismJS Script -->
+    <!-- Script for Syntax Highlighting -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-rust.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
