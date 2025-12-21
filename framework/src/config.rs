@@ -1,0 +1,88 @@
+use std::{collections::HashMap, env};
+
+use common::AppError;
+use config::{Config, Environment, File};
+use serde::Deserialize;
+use tracing::info;
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Server {
+    pub port: u16,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Database {
+    #[serde(alias = "type")]
+    tp: String,
+    host: String,
+    database: String,
+    schema: Option<String>,
+    port: u16,
+    username: String,
+    password: String,
+}
+impl Database {
+    pub fn get_url(&self) -> String {
+        match &self.schema {
+            Some(schema) => format!(
+                "{}://{}:{}@{}:{}/{}?options=-c search_path={}",
+                self.tp, self.username, self.password, self.host, self.port, self.database, schema
+            ),
+            None => format!(
+                "{}://{}:{}@{}:{}/{}",
+                self.tp, self.username, self.password, self.host, self.port, self.database
+            ),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct JWT {
+    pub secret: String,
+    pub issuer: String,
+    pub acc_expiration_hour: u8,
+    pub ref_expiration_hour: u8,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Setting {
+    pub server: Server,
+    pub database: Database,
+    pub jwt: JWT,
+    pub upload: Upload,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Upload {
+    pub max_size: HashMap<String, usize>,
+    pub allowed_types: Vec<String>,
+    pub path: String,
+}
+
+impl Setting {
+    pub fn init() -> Result<Self, AppError> {
+        let run_mode = env::var("RUN_MODE").unwrap_or_else(|_| "dev".into());
+        let config_file_path = format!("config/{}", run_mode);
+        info!("loading config file: {}", config_file_path);
+        let setting = Config::builder()
+            .add_source(File::with_name(&config_file_path))
+            .add_source(Environment::with_prefix("APP"))
+            .build()?;
+        let setting = setting.try_deserialize()?;
+        Ok(setting)
+    }
+}
+
+#[cfg(test)]
+mod config_test {
+    use anyhow::{self, Ok};
+
+    use crate::config::Setting;
+    #[test]
+    fn init_config_test() -> anyhow::Result<()> {
+        let setting = Setting::init()?;
+        dbg!(setting);
+        assert_eq!(1, 2);
+        Ok(())
+    }
+}

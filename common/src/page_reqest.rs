@@ -1,0 +1,45 @@
+use salvo::oapi::ToSchema;
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize, Clone, Default, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PageRequest<T> {
+    /// 页码，默认为1
+    #[serde(default = "default_page")]
+    pub page: u32,
+    /// 每页条数，默认为10，最大100
+    #[serde(default = "default_page_size")]
+    pub page_size: u32,
+    #[serde(flatten)]
+    pub query: T,
+}
+
+impl<T> PageRequest<T> {
+    /// 计算偏移量（用于数据库查询）
+    pub fn offset(&self) -> u32 {
+        (self.page - 1) * self.page_size
+    }
+
+    /// 确保page_size在合理范围内
+    pub fn normalize(&mut self) {
+        if self.page_size == 0 {
+            self.page_size = 10;
+        } else if self.page_size > 100 {
+            self.page_size = 100;
+        }
+
+        if self.page == 0 {
+            self.page = 1;
+        }
+    }
+}
+
+// 默认页码
+fn default_page() -> u32 {
+    1
+}
+
+// 默认每页条数
+fn default_page_size() -> u32 {
+    10
+}

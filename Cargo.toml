@@ -1,0 +1,37 @@
+[workspace]
+resolver = "2"
+members = [
+  "app",
+  "common",
+  "framework",
+  "modules",
+  "modules/system",
+  "modules/monitor",
+]
+
+[workspace.dependencies]
+tokio = { version = "1.47.1", features = ["full"] }
+config = { version = "0.15.15", features = ["toml"] }
+serde = { version = "1.0.219", features = ["derive"] }
+jsonwebtoken = "9.3.1"
+serde_json = "1.0.143"
+tracing = "0.1.41"
+time = { version = "0.3.11", features = [
+  "serde",
+  "formatting",
+  "local-offset",
+] }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+salvo = { version = "0.84.0", features = ["oapi", "serve-static"] }
+sqlx = { version = "0.8.6", features = [
+  "time",
+  "postgres",
+  "macros",
+  "runtime-tokio",
+  "tls-rustls",
+  "uuid",
+] }
+moka = { version = "0.12.10", features = ["future"] }
+anyhow = "1.0.99"
+uuid = "1.18.1"
+async-trait = { version = "0.1.89", features = [] }
