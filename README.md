@@ -112,7 +112,7 @@
 
 ```bash
 cargo generate WindChim1/rust-web-template
-cd rust-web-template
+cd {project_name}
 ```
 
 ### 2. 配置运行
