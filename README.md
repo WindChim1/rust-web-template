@@ -162,7 +162,7 @@ pub async fn add_user(req: &mut Request, depot: &mut Depot, res: &mut Response) 
 
 ```bash
 docker run -d \
-  --name sky-server \
+  --name app-server \
   -p 8081:8081 \
   -e APP_PORT=8081 \
   -e RUN_MODE=release \
@@ -183,9 +183,9 @@ docker run -d \
 #### 更新流程
 
 1. 本地交叉编译：`cross build --release`
-2. 暂停容器：`docker stop sky-server` (释放文件占用)
+2. 暂停容器：`docker stop app-server` (释放文件占用)
 3. 替换文件：覆盖宿主机的 `app-linux` 文件
-4. 启动容器：`docker start sky-server`
+4. 启动容器：`docker start app-server`
 
 ---
 
