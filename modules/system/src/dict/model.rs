@@ -41,10 +41,9 @@ pub struct SysDictType {
 }
 
 /// 创建字典类型的请求实体（不含自增主键和自动填充的时间字段）
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AddSysDictTypeDTO {
-    pub dict_id: i32,
     /// 字典名称（必传）
     pub dict_name: String,
 
@@ -142,9 +141,9 @@ fn default_status() -> String {
 }
 
 /// 用于创建字典数据的请求实体
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct SysDictDataDTO {
+pub struct AddSysDictDataDTO {
     #[serde(default = "default_dict_sort")]
     pub dict_sort: i32,
     pub dict_label: String,

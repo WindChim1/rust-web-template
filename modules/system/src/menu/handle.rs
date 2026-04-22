@@ -19,7 +19,7 @@ use crate::menu::{
 use salvo::Writer;
 
 ///新增菜单
-#[handler]
+#[endpoint(tags("菜单管理"), summary = "添加菜单")]
 pub async fn add(menu: JsonBody<MenuDTO>) -> AppResult<ResponseResult<()>> {
     let menu = menu.into_inner();
     info!("[HANDLER] Entering menu::insert with body: {:?}", menu);
@@ -30,7 +30,7 @@ pub async fn add(menu: JsonBody<MenuDTO>) -> AppResult<ResponseResult<()>> {
 }
 
 ///修改菜单
-#[handler]
+#[endpoint(tags("菜单管理"), summary = "修改菜单")]
 pub async fn update(menu: JsonBody<MenuDTO>) -> AppResult<ResponseResult<()>> {
     let menu = menu.into_inner();
     info!("[HANDLER] Entering menu::insert with body: {:?}", menu);
@@ -71,8 +71,8 @@ pub async fn list() -> AppResult<ResponseResult<Vec<MenuTreeVo>>> {
 
 //获取菜单详情信息
 #[endpoint(
-    tags("System Menu"),        // 1. Swagger 文档分组
-    summary = "Get menu detail", // 2. 接口摘要
+    tags("菜单管理"),        // 1. Swagger 文档分组
+    summary = "获取菜单详情", // 2. 接口摘要
     description = "Retrieve system menu details by ID", // 3. 详细描述
     // 4. 显式声明可能的错误响应（可选，因为 AppError 实现了 EndpointOutRegister，通常会自动处理）
     // responses(
@@ -86,7 +86,7 @@ pub async fn get_detail(menu_id: PathParam<i32>) -> AppResult<ResponseResult<Sys
 }
 
 //删除菜单
-#[handler]
+#[endpoint(tags("菜单管理"), summary = "删除菜单")]
 pub async fn delete(menu_id: PathParam<i32>) -> AppResult<ResponseResult<()>> {
     service::delete_menu_by_id(DBPool::get().await?, menu_id.into_inner()).await?;
     ResponseResult::success_msg("删除成功").into()

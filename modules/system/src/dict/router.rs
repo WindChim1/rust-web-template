@@ -8,11 +8,13 @@ pub fn init_router() -> Router {
         .push(
             Router::new()
                 .path("type")
-                .push(Router::with_path("/page").post(handle::get_type_page)),
+                .push(Router::with_path("/page").post(handle::get_type_page))
+                .push(Router::with_path("/add").post(handle::add_dict_type)),
         )
         .push(
             Router::new()
                 .path("data")
-                .push(Router::with_path("/list_by_type").get(handle::get_data_list_by_type)),
+                .push(Router::with_path("/list_by_type").get(handle::get_data_list_by_type))
+                .push(Router::with_path("/add").post(handle::add_dict_data)),
         )
 }

@@ -2,7 +2,9 @@ use common::{AppResult, SqlBuilder, page_reponse::PageReponse, page_reqest::Page
 use sqlx::PgPool;
 use tracing::info;
 
-use crate::dict::model::{SysDictData, SysDictType, SysDictTypePageQuery};
+use crate::dict::model::{
+    AddSysDictDataDTO, AddSysDictTypeDTO, SysDictData, SysDictType, SysDictTypePageQuery,
+};
 
 pub(crate) async fn get_data_list_by_type(
     db: &PgPool,
@@ -47,4 +49,24 @@ pub(crate) async fn dic_type_page(
     let list: Vec<SysDictType> = sql_builder.fetch_all().await?;
     info!("[SERVICE] Page dict type  list: {:?}", list);
     Ok(PageReponse::new(list, page, page_size, count))
+}
+
+pub(crate) async fn add_dict_type(
+    db: &'static PgPool,
+    dict_type: AddSysDictTypeDTO,
+) -> AppResult<u8> {
+    info!("[SERVICE] Entering add dict type: {:?}", dict_type);
+    let result = sqlx::query!("insert into sys_dict_type (dict_name, dict_type, status, create_by, remark) values ($1, $2, $3, $4, $5)",  dict_type.dict_name, dict_type.dict_type, dict_type.status, dict_type.create_by, dict_type.remark)
+        .execute(db).await?;
+    Ok(result.rows_affected() as u8)
+}
+
+pub(crate) async fn add_dict_data(
+    db: &'static PgPool,
+    dict_data: AddSysDictDataDTO,
+) -> AppResult<u8> {
+    info!("[SERVICE] Entering add dict data: {:?}", dict_data);
+    let result = sqlx::query!("insert into sys_dict_data (dict_sort, dict_label, dict_value, dict_type, is_default, status, create_by, remark) values ($1, $2, $3, $4, $5, $6, $7, $8)",   dict_data.dict_sort, dict_data.dict_label, dict_data.dict_value, dict_data.dict_type, dict_data.is_default, dict_data.status, dict_data.create_by, dict_data.remark)
+        .execute(db).await?;
+    Ok(result.rows_affected() as u8)
 }

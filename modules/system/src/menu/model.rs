@@ -137,7 +137,7 @@ impl MenuTreeVo {
     }
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct MenuDTO {
     pub menu_id: Option<i32>,
