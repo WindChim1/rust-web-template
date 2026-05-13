@@ -1,4 +1,4 @@
-use sqlx::{Encode, Pool, Postgres, QueryBuilder, Type, postgres::PgHasArrayType};
+use sqlx::{Encode, Execute, Pool, Postgres, QueryBuilder, Type, postgres::PgHasArrayType};
 use std::{fmt::Display, marker::PhantomData};
 
 use crate::{AppResult, page_reponse::PageReponse};
@@ -221,6 +221,20 @@ impl<'a> SqlBuilder<'a> {
         let direction = direction.unwrap_or("ASC");
         self.query_builder
             .push(format!(" ORDER BY {} {}", column, direction));
+        self
+    }
+
+    pub fn group_by(&mut self, column: &str) -> &mut Self {
+        self.query_builder.push(format!(" GROUP BY {} ", column));
+        let count_builder = self.count_builder.as_mut().map(|b| {
+            b.push(format!(" GROUP BY {} ", column));
+            let sql = b.sql();
+            let final_sql = format!("SELECT COUNT(*) FROM ({})", sql);
+            let mut query = b.build();
+            let args = query.take_arguments().unwrap().unwrap();
+            QueryBuilder::<Postgres>::with_arguments(final_sql, args)
+        });
+        self.count_builder = count_builder;
         self
     }
 
