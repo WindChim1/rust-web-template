@@ -154,12 +154,23 @@ impl<'a> SqlBuilder<'a> {
         self
     }
 
-    /// 等于条件
+    //等于条件
     pub fn where_eq<T>(&mut self, column: &str, value: Option<T>) -> &mut Self
     where
-        T: Encode<'a, Postgres> + Type<Postgres> + Clone + 'a,
+        T: Encode<'a, Postgres> + Type<Postgres> + Clone + std::fmt::Debug + IsQueryEmpty + 'a,
     {
-        self.where_clause(&format!("{} =  ", column), value, |v| v.clone())
+        // 1. 拦截 None
+        let Some(v) = value.as_ref() else {
+            return self;
+        };
+
+        // 2. 优雅地判断是否为空（编译期已确定调用哪个逻辑）
+        if !v.is_query_empty() {
+            let clause = format!("{} = ", column);
+            self.where_clause(&clause, value, |v| v.clone());
+        }
+
+        self
     }
 
     ///in 条件
@@ -313,3 +324,40 @@ impl<'a> SqlBuilder<'a> {
         self.count_builder.as_ref().map(|c| c.sql())
     }
 }
+// 1. 定义 Trait
+pub trait IsQueryEmpty {
+    fn is_query_empty(&self) -> bool {
+        false
+    }
+}
+
+// 2. 为 String 基础类型实现
+impl IsQueryEmpty for String {
+    fn is_query_empty(&self) -> bool {
+        self.trim().is_empty()
+    }
+}
+
+// 3. 为 str (注意是 str 而不是 &str) 基础类型实现
+impl IsQueryEmpty for str {
+    fn is_query_empty(&self) -> bool {
+        self.trim().is_empty()
+    }
+}
+
+// 4. ⭐ 核心修复：为所有引用类型提供通用实现！
+// 它的意思是：“只要 T 实现了该 Trait，那么 T 的引用 &T 也自动实现该 Trait”
+impl<T: ?Sized + IsQueryEmpty> IsQueryEmpty for &T {
+    fn is_query_empty(&self) -> bool {
+        // 解引用一层，继续调用底层的实现
+        (*self).is_query_empty()
+    }
+}
+
+// 5. 其他数字/布尔类型的默认实现
+macro_rules! impl_not_empty {
+    ($($t:ty),*) => {
+        $(impl IsQueryEmpty for $t {})*
+    };
+}
+impl_not_empty!(i8, i16, i32, i64, f32, f64, bool);
