@@ -1,4 +1,4 @@
-use common::utils::time::timestamp_millis_i64;
+use common::utils::time::opt_ts_ms;
 use salvo::oapi::ToSchema;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -55,9 +55,9 @@ pub struct ListOperLogQuery {
     /// 操作状态（0正常 1异常）
     pub status: Option<i32>,
     /// 日期范围查询
-    #[serde(with = "timestamp_millis_i64")]
+    #[serde(with = "opt_ts_ms")]
     pub start_time: Option<OffsetDateTime>,
-    #[serde(with = "timestamp_millis_i64")]
+    #[serde(with = "opt_ts_ms")]
     pub end_time: Option<OffsetDateTime>,
 }
 
@@ -91,7 +91,7 @@ pub struct OperLogVO {
     ///错误消息
     pub error_msg: Option<String>,
     ///操作时间
-    #[serde(with = "timestamp_millis_i64")]
+    #[serde(with = "opt_ts_ms")]
     pub oper_time: Option<OffsetDateTime>,
 }
 
@@ -126,7 +126,7 @@ pub struct OperLogDTO {
     //错误消息
     pub error_msg: Option<String>,
     //操作时间
-    #[serde(with = "timestamp_millis_i64")]
+    #[serde(with = "opt_ts_ms")]
     pub oper_time: Option<OffsetDateTime>,
     //消耗时间
     pub cost_time: Option<i64>,

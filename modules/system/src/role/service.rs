@@ -1,6 +1,6 @@
 use common::{
     AppError, AppResult, SqlBuilder, page_reponse::PageReponse, page_reqest::PageRequest,
-    utils::time,
+    utils::time::TimeUtil,
 };
 use sqlx::{PgPool, Postgres, Transaction};
 use tracing::info;
@@ -168,14 +168,16 @@ pub(crate) async fn page_role(
 ) -> AppResult<PageReponse<SysRole>> {
     info!("[SERVICE] Entering page_role with query: {:?}", query_page);
     //处理时间条件
-    let start_time = match query_page.query.begin_time {
-        Some(s) => time::flexible_parse_datetime(s.as_str())?,
-        None => None,
-    };
-    let end_time = match query_page.query.end_time {
-        Some(s) => time::flexible_parse_datetime(s.as_str())?,
-        None => None,
-    };
+    let start_time = query_page
+        .query
+        .begin_time
+        .as_deref() // 将 Option<String> 转为 Option<&str>
+        .and_then(TimeUtil::try_parse_ts_ms); // 如果是 Some 且解析成功就返回 Some(dt)
+    let end_time = query_page
+        .query
+        .end_time
+        .as_deref() // 将 Option<String> 转为 Option<&str>
+        .and_then(TimeUtil::try_parse_ts_ms); // 如果是 Some 且解析成功就返回 Some(dt)
     // //构建条件
     let mut sql_builder = SqlBuilder::for_pagination(db, "*", "sys_role", Some("del_flag  = '0'"));
     sql_builder
